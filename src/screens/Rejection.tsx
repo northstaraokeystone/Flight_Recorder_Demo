@@ -116,7 +116,7 @@ export function Rejection({ receipts, attackType, onAdvance }: RejectionProps) {
     <DataViewLayout
       header={
         <div className="text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-red-500 animate-pulse">
+          <h2 className="text-4xl md:text-5xl font-bold text-red-500 animate-pulse drop-shadow-[0_0_20px_rgba(220,38,38,0.5)]">
             ⊘ TAMPERING REJECTED ⊘
           </h2>
         </div>
@@ -147,44 +147,50 @@ export function Rejection({ receipts, attackType, onAdvance }: RejectionProps) {
       }
       bottomSection={
         <div className="space-y-4">
-          {/* Violation panel with RED GLOW */}
+          {/* Violation panel with PULSING RED GLOW - THE MONEY SHOT */}
           <div
             className="
-              bg-gray-800/50
-              border border-red-500/40
+              bg-gray-900/80
+              border-2 border-red-500/60
               rounded-lg
               p-6
-              shadow-[0_0_30px_rgba(220,38,38,0.3)]
+              animate-redGlowPulse
             "
           >
             <h3 className="text-xl font-bold text-red-500 flex items-center gap-2 mb-4">
-              <span>●</span> INTEGRITY VIOLATION <span>●</span>
+              <span className="animate-pulse">●</span>
+              <span>INTEGRITY VIOLATION</span>
+              <span className="animate-pulse">●</span>
             </h3>
 
             <p className="text-gray-300 mb-4">
-              <span className="text-gray-400">Attack attempted: </span>
-              {getAttackDescription(attackType)}
+              <span className="text-gray-500">Attack attempted: </span>
+              <span className="text-red-400">{getAttackDescription(attackType)}</span>
             </p>
 
-            <div className="space-y-3 font-mono text-sm">
+            {/* Verification results in a structured grid */}
+            <div className="grid grid-cols-2 gap-3 font-mono text-sm">
               {verificationResults.map((result) => (
-                <div key={result.name}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-400">{result.name}:</span>
+                <div
+                  key={result.name}
+                  className="bg-gray-800/50 border border-gray-700 rounded p-3"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-gray-400 text-xs">{result.name}</span>
                     {/* CRITICAL: FAILED must be RED per §CONSTRAINT-COLORS */}
-                    <span className="text-red-500 font-bold">FAILED</span>
+                    <span className="text-red-500 font-bold text-xs">FAILED</span>
                   </div>
-                  <div className="ml-4 text-gray-500 mt-1">
+                  <div className="text-gray-500 text-xs">
                     {result.details}
                   </div>
                   {result.expected && (
-                    <div className="ml-4 text-gray-600 text-xs mt-1">
-                      Expected: {result.expected}
+                    <div className="text-gray-600 text-xs mt-1 truncate">
+                      Expected: <span className="text-gray-400">{result.expected}</span>
                     </div>
                   )}
                   {result.computed && (
-                    <div className="ml-4 text-gray-600 text-xs">
-                      Computed: {result.computed}
+                    <div className="text-gray-600 text-xs truncate">
+                      Computed: <span className="text-red-400/70">{result.computed}</span>
                     </div>
                   )}
                 </div>

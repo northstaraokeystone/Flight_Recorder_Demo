@@ -11,7 +11,7 @@ interface ComparisonProps {
 export function Comparison({ onAdvance }: ComparisonProps) {
   return (
     <div
-      className="min-h-screen flex flex-col justify-center items-center p-8 cursor-pointer"
+      className="min-h-screen flex flex-col justify-center items-center p-8 cursor-pointer animate-fadeIn"
       onClick={onAdvance}
     >
       <div className="w-full max-w-6xl">
@@ -149,19 +149,20 @@ export function Comparison({ onAdvance }: ComparisonProps) {
           </div>
         </div>
 
-        {/* Summary */}
-        <div className="mt-8 text-center">
+        {/* Summary - with highlighted keywords */}
+        <div className="mt-8 text-center space-y-2">
           <p className="text-gray-300 text-lg">
-            Traditional logging allows disputed accountability.
+            Traditional logging allows <span className="text-red-400 font-medium">disputed</span> accountability.
           </p>
-          <p className="text-white text-lg font-medium mt-1">
-            Decision provenance makes accountability mathematically provable.
+          <p className="text-white text-xl font-medium">
+            Decision provenance makes accountability{' '}
+            <span className="text-green-400 font-semibold">mathematically provable</span>.
           </p>
         </div>
 
         {/* CTA */}
         <div className="mt-8 text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 animate-pulse">
             Click or press Space to continue
           </p>
         </div>
