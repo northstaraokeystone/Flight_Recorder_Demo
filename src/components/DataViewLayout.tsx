@@ -20,7 +20,7 @@ export function DataViewLayout({
   bottomSection,
 }: DataViewLayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center p-8">
+    <div className="min-h-screen flex flex-col justify-center items-center p-8 animate-fadeIn">
       <div className="w-full max-w-6xl min-w-[1000px]">
         {/* Header */}
         {header && <div className="mb-6">{header}</div>}
@@ -38,9 +38,9 @@ export function DataViewLayout({
           </div>
         </div>
 
-        {/* Bottom Section - THE SECONDARY SECTION (35-40% max) */}
+        {/* Bottom Section - flexible height for violation panels */}
         {bottomSection && (
-          <div className="mt-6 max-h-[180px]">
+          <div className="mt-6">
             {bottomSection}
           </div>
         )}
