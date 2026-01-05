@@ -102,34 +102,34 @@ body {
 
 /* Animation utility classes */
 .animate-fadeIn {
-  animation: fadeIn 0.6s ease-out forwards;
+  animation: fadeIn 1.8s ease-out forwards; /* 3x: was 0.6s */
 }
 
 .animate-fadeInUp {
-  animation: fadeInUp 0.6s ease-out forwards;
+  animation: fadeInUp 1.8s ease-out forwards; /* 3x: was 0.6s */
 }
 
 .animate-fadeInScale {
-  animation: fadeInScale 0.5s ease-out forwards;
+  animation: fadeInScale 1.5s ease-out forwards; /* 3x: was 0.5s */
 }
 
 .animate-glowPulse {
-  animation: glowPulse 3s ease-in-out infinite;
+  animation: glowPulse 9s ease-in-out infinite; /* 3x: was 3s */
 }
 
 .animate-redGlowPulse {
-  animation: redGlowPulse 2s ease-in-out infinite;
+  animation: redGlowPulse 6s ease-in-out infinite; /* 3x: was 2s */
 }
 
-/* Staggered animation delays */
-.delay-100 { animation-delay: 100ms; }
-.delay-200 { animation-delay: 200ms; }
-.delay-300 { animation-delay: 300ms; }
-.delay-400 { animation-delay: 400ms; }
-.delay-500 { animation-delay: 500ms; }
-.delay-600 { animation-delay: 600ms; }
-.delay-700 { animation-delay: 700ms; }
-.delay-800 { animation-delay: 800ms; }
+/* Staggered animation delays (3x multiplier) */
+.delay-100 { animation-delay: 300ms; }  /* 3x: was 100ms */
+.delay-200 { animation-delay: 600ms; }  /* 3x: was 200ms */
+.delay-300 { animation-delay: 900ms; }  /* 3x: was 300ms */
+.delay-400 { animation-delay: 1200ms; } /* 3x: was 400ms */
+.delay-500 { animation-delay: 1500ms; } /* 3x: was 500ms */
+.delay-600 { animation-delay: 1800ms; } /* 3x: was 600ms */
+.delay-700 { animation-delay: 2100ms; } /* 3x: was 700ms */
+.delay-800 { animation-delay: 2400ms; } /* 3x: was 800ms */
 
 /* Initially hidden for animation */
 .animate-initial {

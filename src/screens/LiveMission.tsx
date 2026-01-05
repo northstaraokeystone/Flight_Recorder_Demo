@@ -41,13 +41,13 @@ export function LiveMission({ onAdvance, onReceiptsGenerated }: LiveMissionProps
       const timer = setTimeout(() => {
         onReceiptsGenerated(allReceipts);
         onAdvance();
-      }, 2000);
+      }, 12000); // 6x: monitor dashboard focus area
       return () => clearTimeout(timer);
     }
 
     const timer = setTimeout(() => {
       setReceipts(prev => [...prev, allReceipts[prev.length]]);
-    }, 500); // 2 receipts per second
+    }, 3000); // 6x: monitor dashboard focus area (was 500ms)
 
     return () => clearTimeout(timer);
   }, [receipts, isPlaying, allReceipts, onAdvance, onReceiptsGenerated]);
