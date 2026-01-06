@@ -1,6 +1,6 @@
 /**
- * ConnectionStatus - Real-time link state display
- * The heartbeat of the denied environment demo
+ * ConnectionStatus - Compact header display
+ * SYS: ONLINE | LINK: 12ms | MODE: CLOUD_SYNC
  */
 
 import type { LinkState } from '../../constants/scenario';
@@ -23,104 +23,64 @@ export function ConnectionStatus({ link }: ConnectionStatusProps) {
     }
   };
 
-  const getStatusText = () => {
-    switch (link.status) {
-      case 'OPTIMAL':
-        return `LINK: OPTIMAL (${link.latencyMs}ms)`;
-      case 'DEGRADED':
-        return `LINK: DEGRADED (${link.latencyMs}ms)`;
-      case 'SEVERED':
-        return 'LINK: SEVERED';
-      case 'RESTORED':
-        return `LINK: RESTORED (${link.latencyMs}ms)`;
-    }
-  };
-
-  const getBadgeText = () => {
-    if (link.protocol === 'AUTONOMOUS_FIDUCIARY') {
-      return 'AUTONOMOUS FIDUCIARY MODE';
-    }
-    return 'CLOUD SYNC ACTIVE';
-  };
-
   const isOffline = link.status === 'SEVERED';
+  const statusColor = getStatusColor();
 
   return (
-    <div className="flex flex-col gap-2">
-      {/* Corner bracket styling */}
-      <div
-        className="relative px-4 py-3 font-mono text-sm"
-        style={{
-          backgroundColor: 'rgba(13, 20, 36, 0.8)',
-          border: `1px solid ${COLORS.borderBracket}`,
-        }}
-      >
-        {/* Corner brackets */}
-        <div className="absolute top-0 left-0 w-3 h-3 border-l-2 border-t-2" style={{ borderColor: getStatusColor() }} />
-        <div className="absolute top-0 right-0 w-3 h-3 border-r-2 border-t-2" style={{ borderColor: getStatusColor() }} />
-        <div className="absolute bottom-0 left-0 w-3 h-3 border-l-2 border-b-2" style={{ borderColor: getStatusColor() }} />
-        <div className="absolute bottom-0 right-0 w-3 h-3 border-r-2 border-b-2" style={{ borderColor: getStatusColor() }} />
-
-        {/* Signal bars */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-end gap-0.5 h-4">
-            {[1, 2, 3, 4, 5].map((bar) => {
-              const isActive = link.status === 'OPTIMAL' || link.status === 'RESTORED'
-                ? true
-                : link.status === 'DEGRADED'
-                ? bar <= 2
-                : false;
-              const height = bar * 3 + 4;
-              return (
-                <div
-                  key={bar}
-                  className={`w-1.5 transition-all duration-300 ${isActive ? '' : 'opacity-30'}`}
-                  style={{
-                    height: `${height}px`,
-                    backgroundColor: isActive ? getStatusColor() : COLORS.textMuted,
-                  }}
-                />
-              );
-            })}
-          </div>
-
-          {/* Status text */}
+    <div className="flex items-center gap-3 font-mono">
+      {/* System status */}
+      <div className="flex items-center gap-2">
+        {/* Status dot */}
+        <div
+          className={`w-2 h-2 rounded-full ${isOffline ? 'animate-pulse' : ''}`}
+          style={{
+            backgroundColor: statusColor,
+            boxShadow: `0 0 6px ${statusColor}`,
+          }}
+        />
+        <div className="flex flex-col">
+          <span className="text-[8px] tracking-wider" style={{ color: COLORS.textMuted }}>
+            SYS
+          </span>
           <span
-            className="font-bold tracking-wide transition-colors duration-300"
-            style={{ color: getStatusColor() }}
+            className="text-[10px] font-bold"
+            style={{ color: statusColor }}
           >
-            {getStatusText()}
+            {isOffline ? 'OFFLINE' : 'ONLINE'}
           </span>
         </div>
-
-        {/* Flatline effect when severed */}
-        {isOffline && (
-          <div className="absolute inset-x-4 top-1/2 h-0.5 -translate-y-1/2 pointer-events-none">
-            <div
-              className="h-full animate-pulse"
-              style={{
-                background: `linear-gradient(90deg, transparent 0%, ${COLORS.statusOffline} 50%, transparent 100%)`,
-              }}
-            />
-          </div>
-        )}
       </div>
 
-      {/* Protocol badge */}
-      <div
-        className={`
-          px-3 py-1.5 font-mono text-xs tracking-wider text-center
-          transition-all duration-500
-          ${isOffline ? 'animate-pulse' : ''}
-        `}
-        style={{
-          backgroundColor: isOffline ? 'rgba(204, 51, 51, 0.2)' : 'rgba(0, 212, 255, 0.1)',
-          border: `1px solid ${isOffline ? COLORS.statusOffline : COLORS.statusOnline}`,
-          color: isOffline ? COLORS.statusOffline : COLORS.statusOnline,
-        }}
-      >
-        {isOffline && <span className="mr-2">PROTOCOL:</span>}
-        {getBadgeText()}
+      {/* Divider */}
+      <div className="w-px h-6" style={{ backgroundColor: COLORS.borderBracket }} />
+
+      {/* Link status */}
+      <div className="flex flex-col">
+        <span className="text-[8px] tracking-wider" style={{ color: COLORS.textMuted }}>
+          LINK
+        </span>
+        <span
+          className="text-[10px] font-bold"
+          style={{ color: isOffline ? COLORS.statusOffline : COLORS.textSecondary }}
+        >
+          {isOffline ? '---' : `${link.latencyMs}ms`}
+        </span>
+      </div>
+
+      {/* Divider */}
+      <div className="w-px h-6" style={{ backgroundColor: COLORS.borderBracket }} />
+
+      {/* Mode */}
+      <div className="flex flex-col">
+        <span className="text-[8px] tracking-wider" style={{ color: COLORS.textMuted }}>
+          MODE
+        </span>
+        <span
+          className={`text-[10px] font-bold ${isOffline ? 'animate-pulse' : ''}`}
+          style={{ color: isOffline ? COLORS.alertAmber : COLORS.statusOnline }}
+        >
+          {link.protocol === 'AUTONOMOUS_FIDUCIARY' ? 'LOCAL_FIDUCIARY' : 'CLOUD_SYNC'}
+        </span>
       </div>
     </div>
   );

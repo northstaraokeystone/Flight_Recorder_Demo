@@ -1,27 +1,27 @@
 /**
- * Color System - Anduril/Shield AI Inspired
- * Deep navy/black backgrounds with cyan/amber/red accents
+ * Color System - Defense Platform Aesthetic
+ * Deep blacks, muted colors, Bloomberg terminal density
  */
 
 export const COLORS = {
-  // Backgrounds (Anduril/Shield AI palette)
-  bgPrimary: '#0a0f1a',        // Deep navy-black
-  bgCard: '#0d1424',           // Card surfaces
-  bgElevated: '#111827',       // Elevated surfaces
-  bgGrid: '#1a1a2e',           // Grid lines
+  // Backgrounds - Near black for density
+  bgPrimary: '#0a0a0a',        // Near-black
+  bgCard: '#0d1117',           // GitHub dark
+  bgElevated: '#111111',       // Slightly elevated
+  bgGrid: 'rgba(255,255,255,0.06)', // Grid lines - very subtle
 
   // Primary Accent
   accent: '#00d4ff',           // Cyan - primary accent
   accentDim: '#0094b3',        // Dimmed cyan
-  accentGlow: 'rgba(0, 212, 255, 0.3)', // Cyan glow
+  accentGlow: 'rgba(0, 212, 255, 0.2)', // Cyan glow
 
-  // Text
+  // Text - Instrument grade
   textPrimary: '#ffffff',      // Primary text
-  textSecondary: '#9ca3af',    // gray-400
-  textMuted: '#6b7280',        // gray-500
-  textTimestamp: '#888888',    // Timestamp gray
+  textSecondary: '#888888',    // Secondary
+  textMuted: '#666666',        // Muted/labels
+  textTimestamp: '#555555',    // Timestamp gray
 
-  // Status Colors
+  // Status Colors - Muted for professional look
   statusOnline: '#00d4ff',     // Cyan - optimal
   statusDegraded: '#ffaa00',   // Amber - warning
   statusOffline: '#cc3333',    // Muted red - severed
@@ -33,10 +33,11 @@ export const COLORS = {
   alertAmber: '#ffaa00',       // Amber warning
   alertGreen: '#00aa66',       // Success green
 
-  // Zones (tactical map)
-  zoneGreen: '#00aa66',        // Flight corridor
-  zoneGrey: '#4a5568',         // Comms dead zone
-  zoneRed: '#cc3333',          // Liability zone
+  // Zones (tactical map) - Much more muted
+  zoneGreen: '#2a5a3a',        // Flight corridor - muted green
+  zoneGrey: '#444444',         // Comms dead zone - grey
+  zoneRed: '#5a2a2a',          // Liability zone - muted red
+  zoneRedBright: '#cc3333',    // Liability zone border
 
   // Legacy gate colors (for compatibility)
   gateGreen: '#00aa66',
@@ -47,9 +48,9 @@ export const COLORS = {
   good: '#00aa66',
   bad: '#cc3333',
 
-  // Borders
-  borderDefault: '#1f2937',
-  borderBracket: '#374151',
+  // Borders - Very subtle
+  borderDefault: '#1a1a1a',
+  borderBracket: '#333333',
   borderDanger: '#cc3333',
   borderSuccess: '#00aa66',
 } as const;

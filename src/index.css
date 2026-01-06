@@ -16,8 +16,9 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #0a0f1a;
+  background-color: #0a0a0a;
   color: white;
+  font-size: 10px;
 }
 
 /* Custom scrollbar for dark theme */
@@ -27,7 +28,7 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0d1424;
+  background: #0a0a0a;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -345,4 +346,182 @@ body {
   color: rgba(255, 255, 255, 0.1);
   font-family: Georgia, serif;
   line-height: 1;
+}
+
+/* ===== CRT / STATIC EFFECTS ===== */
+
+/* CRT static overlay for offline state */
+@keyframes crtFlicker {
+  0% { opacity: 0.08; }
+  10% { opacity: 0.12; }
+  20% { opacity: 0.06; }
+  30% { opacity: 0.1; }
+  40% { opacity: 0.08; }
+  50% { opacity: 0.14; }
+  60% { opacity: 0.07; }
+  70% { opacity: 0.11; }
+  80% { opacity: 0.09; }
+  90% { opacity: 0.13; }
+  100% { opacity: 0.08; }
+}
+
+.crt-static {
+  position: relative;
+}
+
+.crt-static::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.02) 2px,
+      rgba(255, 255, 255, 0.02) 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 3px,
+      rgba(255, 255, 255, 0.01) 3px,
+      rgba(255, 255, 255, 0.01) 6px
+    );
+  animation: crtFlicker 0.15s infinite;
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* Radar pulse animation */
+@keyframes radarPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+}
+
+.animate-radarPulse {
+  animation: radarPulse 2s ease-in-out infinite;
+}
+
+/* Typewriter cursor blink */
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.typewriter-cursor::after {
+  content: '_';
+  animation: cursorBlink 0.8s step-end infinite;
+}
+
+/* Border pulse for amber warning */
+@keyframes borderPulseAmber {
+  0%, 100% { border-color: rgba(255, 170, 0, 0.3); }
+  50% { border-color: rgba(255, 170, 0, 0.7); }
+}
+
+.animate-borderPulseAmber {
+  animation: borderPulseAmber 1s ease-in-out infinite;
+}
+
+/* Data flicker for telemetry */
+@keyframes dataFlicker {
+  0%, 95%, 100% { opacity: 1; }
+  96% { opacity: 0.7; }
+  97% { opacity: 1; }
+  98% { opacity: 0.8; }
+  99% { opacity: 1; }
+}
+
+.animate-dataFlicker {
+  animation: dataFlicker 0.1s infinite;
+}
+
+/* Risk mitigated number pulse */
+@keyframes riskPulse {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(0, 170, 102, 0.5);
+    transform: scale(1);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(0, 170, 102, 0.8);
+    transform: scale(1.02);
+  }
+}
+
+.animate-riskPulse {
+  animation: riskPulse 2s ease-in-out infinite;
+}
+
+/* Stop rule badge flash */
+@keyframes stopRuleFlash {
+  0%, 100% {
+    background-color: rgba(0, 170, 102, 0.2);
+    border-color: #00aa66;
+  }
+  50% {
+    background-color: rgba(0, 170, 102, 0.4);
+    border-color: #00ff99;
+  }
+}
+
+.animate-stopRuleFlash {
+  animation: stopRuleFlash 0.5s ease-in-out infinite;
+}
+
+/* Ghost path drawing animation */
+@keyframes ghostPathDraw {
+  from { stroke-dashoffset: 1000; }
+  to { stroke-dashoffset: 0; }
+}
+
+.animate-ghostPath {
+  stroke-dasharray: 1000;
+  animation: ghostPathDraw 1s ease-out forwards;
+}
+
+/* Instrument text - very small */
+.text-instrument {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+  letter-spacing: 0.02em;
+}
+
+.text-instrument-sm {
+  font-size: 8px;
+  font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+  letter-spacing: 0.02em;
+}
+
+.text-instrument-lg {
+  font-size: 12px;
+  font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+  letter-spacing: 0.02em;
+}
+
+.text-instrument-header {
+  font-size: 14px;
+  font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+  letter-spacing: 0.05em;
+}
+
+/* Dead zone diagonal hatch pattern */
+.dead-zone-hatch {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 8px,
+    rgba(255, 255, 255, 0.03) 8px,
+    rgba(255, 255, 255, 0.03) 16px
+  );
 }
