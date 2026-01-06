@@ -632,18 +632,36 @@ body {
   }
 }
 
-/* Merkle root glow animation */
+/* Merkle root glow animation - v4.0 GLASS COCKPIT enhanced */
 @keyframes merkleGlow {
   0%, 100% {
     text-shadow: 0 0 20px rgba(248, 250, 252, 0.3),
                  0 0 40px rgba(248, 250, 252, 0.1);
     opacity: 1;
+    transform: scale(1);
   }
   50% {
-    text-shadow: 0 0 30px rgba(248, 250, 252, 0.5),
-                 0 0 60px rgba(248, 250, 252, 0.2);
-    opacity: 0.95;
+    text-shadow: 0 0 40px rgba(248, 250, 252, 0.6),
+                 0 0 80px rgba(248, 250, 252, 0.3);
+    opacity: 0.97;
+    transform: scale(1.02);
   }
+}
+
+/* Growing hash effect for seal sequence */
+@keyframes hashGrow {
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.hash-grow {
+  animation: hashGrow 2s ease-out forwards;
 }
 
 /* Leader line draw animation */

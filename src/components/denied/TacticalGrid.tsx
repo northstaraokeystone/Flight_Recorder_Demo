@@ -45,11 +45,23 @@ interface TelemetryData {
 }
 
 // Camera constants - drone locked at center
+// GLASS COCKPIT v4.0: Drone is the fixed point of the universe
 const CAMERA = {
-  DRONE_X_PERCENT: 0.5,  // 50% from left
-  DRONE_Y_PERCENT: 0.4,  // 40% from top
+  DRONE_X_PERCENT: 0.5,  // 50% from left - EXACTLY CENTER
+  DRONE_Y_PERCENT: 0.4,  // 40% from top - GOLDEN RATIO
   VIEWPORT_WIDTH: 560,
   VIEWPORT_HEIGHT: 360,
+  ZOOM: 2.5,             // v4.0: Drone is quarter-sized, not pixel
+};
+
+// Drone visual specifications - v4.0 CHEVRON
+const DRONE_VISUAL = {
+  SIZE: 45,              // 40-50px as specified
+  STROKE_WIDTH: 3,
+  COLOR: '#F8FAFC',      // Bright white
+  PULSE_MIN: 0.8,
+  PULSE_MAX: 1.0,
+  PULSE_DURATION: 2000,  // 2s cycle
 };
 
 // Calculate screen position for drone
@@ -77,18 +89,18 @@ export function TacticalGrid({
     'HUMAN_QUERY',
   ].includes(phase);
 
-  // CAMERA FOLLOW SYSTEM: Calculate world offset
-  // This is the key transformation - drone stays at fixed screen position,
-  // world translates in opposite direction
+  // CAMERA FOLLOW SYSTEM: Calculate world offset with ZOOM
+  // v4.0 GLASS COCKPIT: Drone stays at fixed screen position,
+  // world translates AND scales around the drone
   const worldOffset = useMemo(() => ({
-    x: dronePosition.x - DRONE_SCREEN_X,
-    y: dronePosition.y - DRONE_SCREEN_Y,
+    x: dronePosition.x * CAMERA.ZOOM - DRONE_SCREEN_X,
+    y: dronePosition.y * CAMERA.ZOOM - DRONE_SCREEN_Y,
   }), [dronePosition.x, dronePosition.y]);
 
-  // Transform world coordinates to screen coordinates
+  // Transform world coordinates to screen coordinates with ZOOM
   const worldToScreen = (worldX: number, worldY: number) => ({
-    x: worldX - worldOffset.x,
-    y: worldY - worldOffset.y,
+    x: worldX * CAMERA.ZOOM - worldOffset.x,
+    y: worldY * CAMERA.ZOOM - worldOffset.y,
   });
 
   // Simulate telemetry based on position and phase
@@ -191,10 +203,12 @@ export function TacticalGrid({
   // Transform unknown object location to screen coords
   const unknownObjScreen = worldToScreen(UNKNOWN_OBJECT_LOCATION.x, UNKNOWN_OBJECT_LOCATION.y);
 
-  // Transform geofence to screen coords
+  // Transform geofence to screen coords with ZOOM
   const geofenceScreen = {
-    x: MAP_ZONES.grey.x - worldOffset.x,
-    y: MAP_ZONES.grey.y - worldOffset.y,
+    x: MAP_ZONES.grey.x * CAMERA.ZOOM - worldOffset.x,
+    y: MAP_ZONES.grey.y * CAMERA.ZOOM - worldOffset.y,
+    width: MAP_ZONES.grey.width * CAMERA.ZOOM,
+    height: MAP_ZONES.grey.height * CAMERA.ZOOM,
   };
 
   return (
@@ -215,12 +229,12 @@ export function TacticalGrid({
 
         {/* WORLD LAYER - Everything here moves with the camera */}
         <g className="world-layer">
-          {/* Barely visible grid lines - translated with world */}
+          {/* Barely visible grid lines - translated with world and ZOOM */}
           <g opacity="0.12">
-            {/* Vertical lines */}
-            {Array.from({ length: 40 }).map((_, i) => {
+            {/* Vertical lines - scaled by ZOOM */}
+            {Array.from({ length: 60 }).map((_, i) => {
               const worldX = i * 20;
-              const screenX = worldX - worldOffset.x;
+              const screenX = worldX * CAMERA.ZOOM - worldOffset.x;
               return (
                 <line
                   key={`v-${i}`}
@@ -233,10 +247,10 @@ export function TacticalGrid({
                 />
               );
             })}
-            {/* Horizontal lines */}
-            {Array.from({ length: 25 }).map((_, i) => {
+            {/* Horizontal lines - scaled by ZOOM */}
+            {Array.from({ length: 40 }).map((_, i) => {
               const worldY = i * 20;
-              const screenY = worldY - worldOffset.y;
+              const screenY = worldY * CAMERA.ZOOM - worldOffset.y;
               return (
                 <line
                   key={`h-${i}`}
@@ -287,27 +301,27 @@ export function TacticalGrid({
             />
           </g>
 
-          {/* Geofence / GPS Bounds - moves with world */}
+          {/* Geofence / GPS Bounds - moves with world, scaled by ZOOM */}
           <g>
             <rect
               x={geofenceScreen.x}
               y={geofenceScreen.y}
-              width={MAP_ZONES.grey.width}
-              height={MAP_ZONES.grey.height}
+              width={geofenceScreen.width}
+              height={geofenceScreen.height}
               fill="none"
               stroke={isUncertaintyPhase && geofenceFlash ? COLORS.alertRed : COLORS.textTimestamp}
-              strokeWidth={isUncertaintyPhase ? 2 : 1}
-              strokeDasharray="8 4"
+              strokeWidth={isUncertaintyPhase ? 3 : 1.5}
+              strokeDasharray="12 6"
               opacity={isUncertaintyPhase ? 0.8 : 0.25}
               style={{
                 transition: 'stroke 0.15s, opacity 0.3s',
               }}
             />
             <text
-              x={geofenceScreen.x + 5}
-              y={geofenceScreen.y - 5}
+              x={geofenceScreen.x + 8}
+              y={geofenceScreen.y - 8}
               style={{
-                fontSize: '8px',
+                fontSize: '11px',
                 fontFamily: 'JetBrains Mono, monospace',
                 fill: isUncertaintyPhase && geofenceFlash ? COLORS.alertRed : COLORS.textTimestamp,
                 opacity: isUncertaintyPhase ? 0.9 : 0.4,
@@ -317,25 +331,25 @@ export function TacticalGrid({
             </text>
           </g>
 
-          {/* Future path - very dim */}
+          {/* Future path - very dim, scaled for zoom */}
           {futurePathD && (
             <path
               d={futurePathD}
               fill="none"
               stroke={COLORS.waypointFuture}
-              strokeWidth="1"
-              strokeDasharray="2 4"
+              strokeWidth="2"
+              strokeDasharray="4 8"
               opacity="0.4"
             />
           )}
 
-          {/* Completed path - dim slate */}
+          {/* Completed path - dim slate, scaled for zoom */}
           {completedPathD && (
             <path
               d={completedPathD}
               fill="none"
               stroke={COLORS.flightPathInactive}
-              strokeWidth="1.5"
+              strokeWidth="3"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
@@ -349,12 +363,12 @@ export function TacticalGrid({
               x2={DRONE_SCREEN_X}
               y2={DRONE_SCREEN_Y}
               stroke={COLORS.flightPathActive}
-              strokeWidth="2"
+              strokeWidth="4"
               strokeLinecap="round"
             />
           )}
 
-          {/* Waypoints - move with world */}
+          {/* Waypoints - move with world, scaled for zoom */}
           {FLIGHT_PATH.map((wp, i) => {
             const isCurrent = i === currentWaypoint;
             const isCompleted = i < visitedPathIndex;
@@ -365,7 +379,7 @@ export function TacticalGrid({
                 <circle
                   cx={screen.x}
                   cy={screen.y}
-                  r={isCurrent ? 6 : 4}
+                  r={isCurrent ? 12 : 8}
                   fill={isCurrent ? COLORS.waypointCurrent : 'none'}
                   stroke={
                     isCurrent
@@ -374,15 +388,16 @@ export function TacticalGrid({
                         ? COLORS.waypointCompleted
                         : COLORS.waypointFuture
                   }
-                  strokeWidth={isCurrent ? 2 : 1}
+                  strokeWidth={isCurrent ? 3 : 2}
                   className={isCurrent ? 'animate-subtlePulse' : ''}
                 />
                 <text
                   x={screen.x}
-                  y={screen.y - 10}
+                  y={screen.y - 18}
                   textAnchor="middle"
                   style={{
-                    fontSize: '7px',
+                    fontSize: '12px',
+                    fontWeight: 500,
                     fontFamily: 'JetBrains Mono, monospace',
                     fill: isCurrent
                       ? COLORS.textSecondary
@@ -397,30 +412,31 @@ export function TacticalGrid({
             );
           })}
 
-          {/* GPS Drift Zone indicator - moves with world */}
+          {/* GPS Drift Zone indicator - moves with world, scaled for zoom */}
           {showUnknownObject && (
             <g className={isLowConfidence ? 'animate-pulse' : ''}>
               <circle
                 cx={unknownObjScreen.x}
                 cy={unknownObjScreen.y}
-                r="14"
+                r="28"
                 fill="none"
                 stroke={COLORS.alertRed}
-                strokeWidth="1.5"
-                strokeDasharray={unknownObject?.identified ? 'none' : '4 2'}
-                opacity={0.6}
+                strokeWidth="3"
+                strokeDasharray={unknownObject?.identified ? 'none' : '8 4'}
+                opacity={0.7}
               />
               <circle
                 cx={unknownObjScreen.x}
                 cy={unknownObjScreen.y}
-                r="4"
+                r="8"
                 fill={unknownObject?.identified ? COLORS.textMuted : COLORS.alertRed}
               />
               <text
-                x={unknownObjScreen.x + 18}
-                y={unknownObjScreen.y - 5}
+                x={unknownObjScreen.x + 35}
+                y={unknownObjScreen.y - 8}
                 style={{
-                  fontSize: '8px',
+                  fontSize: '14px',
+                  fontWeight: 600,
                   fontFamily: 'JetBrains Mono, monospace',
                   fill: COLORS.alertRed,
                 }}
@@ -432,45 +448,76 @@ export function TacticalGrid({
         </g>
 
         {/* DRONE LAYER - Fixed at center, never moves */}
+        {/* v4.0 GLASS COCKPIT: CHEVRON (Λ) - The protagonist of the film */}
         <g transform={`translate(${DRONE_SCREEN_X}, ${DRONE_SCREEN_Y})`}>
-          {/* Glow effect */}
+          {/* Outer glow effect */}
+          <defs>
+            <filter id="drone-glow-v4" x="-100%" y="-100%" width="300%" height="300%">
+              <feGaussianBlur stdDeviation="4" result="glow" />
+              <feMerge>
+                <feMergeNode in="glow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {/* Subtle pulse ring */}
           <circle
-            r="12"
-            fill={isLowConfidence ? 'rgba(239, 68, 68, 0.15)' : 'rgba(248, 250, 252, 0.08)'}
-          />
-          {/* Outer ring */}
-          <circle
-            r="8"
+            r={DRONE_VISUAL.SIZE * 0.6}
             fill="none"
-            stroke={isLowConfidence ? COLORS.alertRed : COLORS.textMuted}
+            stroke={isLowConfidence ? COLORS.alertRed : 'rgba(248, 250, 252, 0.15)'}
             strokeWidth="1"
-            opacity="0.5"
+            className="animate-subtlePulse"
           />
-          {/* Main dot */}
-          <circle
-            r="4"
-            fill={isLowConfidence ? COLORS.alertRed : COLORS.waypointCurrent}
-          />
-          {/* Direction indicator */}
-          <g transform={`rotate(${dronePosition.rotation})`}>
-            <polygon
-              points="0,-10 4,-3 -4,-3"
-              fill={isLowConfidence ? COLORS.alertRed : COLORS.textSecondary}
-              opacity="0.9"
+
+          {/* CHEVRON (Λ) - The main drone visual */}
+          <g
+            transform={`rotate(${dronePosition.rotation})`}
+            filter="url(#drone-glow-v4)"
+          >
+            {/* Main chevron shape - 40-50px, 3px stroke */}
+            <path
+              d={`M 0 ${-DRONE_VISUAL.SIZE / 2}
+                  L ${DRONE_VISUAL.SIZE / 2.5} ${DRONE_VISUAL.SIZE / 3}
+                  L 0 ${DRONE_VISUAL.SIZE / 6}
+                  L ${-DRONE_VISUAL.SIZE / 2.5} ${DRONE_VISUAL.SIZE / 3}
+                  Z`}
+              fill={isLowConfidence ? 'rgba(252, 165, 165, 0.2)' : 'rgba(248, 250, 252, 0.1)'}
+              stroke={isLowConfidence ? COLORS.alertRed : DRONE_VISUAL.COLOR}
+              strokeWidth={DRONE_VISUAL.STROKE_WIDTH}
+              strokeLinejoin="round"
+              className="animate-subtlePulse"
+              style={{
+                filter: isLowConfidence
+                  ? 'drop-shadow(0 0 8px rgba(252, 165, 165, 0.6))'
+                  : 'drop-shadow(0 0 6px rgba(248, 250, 252, 0.4))',
+              }}
+            />
+
+            {/* Center line - heading indicator */}
+            <line
+              x1="0"
+              y1={-DRONE_VISUAL.SIZE / 2 - 8}
+              x2="0"
+              y2={-DRONE_VISUAL.SIZE / 2 - 20}
+              stroke={isLowConfidence ? COLORS.alertRed : DRONE_VISUAL.COLOR}
+              strokeWidth="2"
+              opacity="0.7"
             />
           </g>
         </g>
 
-        {/* Drone label - fixed below drone */}
+        {/* Drone label - fixed below drone, v4.0 readable */}
         <text
           x={DRONE_SCREEN_X}
-          y={DRONE_SCREEN_Y + 24}
+          y={DRONE_SCREEN_Y + DRONE_VISUAL.SIZE / 2 + 20}
           textAnchor="middle"
           style={{
-            fontSize: '9px',
+            fontSize: '12px',
+            fontWeight: 500,
             fontFamily: 'JetBrains Mono, monospace',
-            fill: COLORS.textMuted,
-            letterSpacing: '0.05em',
+            fill: COLORS.textSecondary,
+            letterSpacing: '0.08em',
           }}
         >
           UAV_01
