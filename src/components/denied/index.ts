@@ -19,6 +19,9 @@ export { TrustGap } from './TrustGap';
 // v2.3 BULLETPROOF: Temporal Knowledge Graph
 export { TemporalKnowledgeGraph } from './TemporalKnowledgeGraph';
 
+// v2.4: Investor Narrator - CFO-Grade Value Translation
+export { InvestorNarrator } from './InvestorNarrator';
+
 // Legacy components (kept for compatibility)
 export { ConnectionStatus } from './ConnectionStatus';
 export { ComplianceBar } from './ComplianceBar';

@@ -23,7 +23,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { TacticalGrid, Affidavit, createLedgerEntry } from '../components/denied';
+import { TacticalGrid, Affidavit, createLedgerEntry, InvestorNarrator } from '../components/denied';
 import { createGovernanceLogEntry } from '../components/denied/CryptographicLedger';
 import type { GovernanceState } from '../components/denied/GovernancePanel';
 import type { ScenarioPhase, GovernanceLogEntry, DronePosition, UnknownObject } from '../constants/scenario';
@@ -111,6 +111,10 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
 
   // End state
   const [showAffidavit, setShowAffidavit] = useState(false);
+
+  // Investor Narrator state
+  const [isAnomalyDetected, setIsAnomalyDetected] = useState(false);
+  const [isMissionComplete, setIsMissionComplete] = useState(false);
 
   // Timing refs
   const phaseStartRef = useRef(Date.now());
@@ -269,6 +273,8 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         setBorderPulse('amber');
         // v4.0: Leader line for GPS_DRIFT event
         addLeaderLine('GPS_DRIFT', generateDualHash('gps-drift').sha256.slice(0, 8), 'critical');
+        // Investor Narrator: Mark anomaly detected
+        setIsAnomalyDetected(true);
         break;
 
       case 'CRAG_TRIGGERED':
@@ -361,6 +367,8 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         addLogEntry('MISSION_COMPLETE', '5/5 waypoints', null, 'SUCCESS');
         addLogEntry('CHAIN_VERIFY', 'INTEGRITY 100%', null, 'SUCCESS');
         setGovernance(prev => ({ ...prev, confidence: 0.98 }));
+        // Investor Narrator: Mark mission complete
+        setIsMissionComplete(true);
 
         // Start the seal sequence after 2 seconds
         // Map stays visible (dimmed by affidavit backdrop) for immersion
@@ -508,6 +516,9 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
     setMapOpacity(0);
     setShowMerkleRoot(false);
     setShowAffidavit(false);
+    // Reset Investor Narrator state
+    setIsAnomalyDetected(false);
+    setIsMissionComplete(false);
 
     // v4.0: Restart boot sequence - 5 second intro
     const bootSteps = [
@@ -651,6 +662,19 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
           activeCallout={activeCallout}
         />
       </div>
+
+      {/* ===== INVESTOR NARRATOR v2.0 - CFO-Grade Value Translation ===== */}
+      {demoPhase === 'RUNNING' && (
+        <InvestorNarrator
+          waypointCount={currentWaypoint}
+          confidence={governance.confidence}
+          isAnomalyDetected={isAnomalyDetected}
+          isMissionComplete={isMissionComplete}
+          anomaliesDetected={1}
+          anomaliesCorrected={1}
+          onViewVerification={() => setShowAffidavit(true)}
+        />
+      )}
 
       {/* ===== v4.0: F-35 HUD GAUGES - Top-center, fighter jet style ===== */}
       {demoPhase === 'RUNNING' && (

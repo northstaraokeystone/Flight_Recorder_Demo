@@ -764,3 +764,114 @@ body {
 .line-height-comfortable {
   line-height: 1.6;
 }
+
+/* ===== INVESTOR NARRATOR v2.0 - CFO-Grade Callouts ===== */
+
+/* Narrator callout base styling */
+.narrator-callout {
+  pointer-events: auto;
+}
+
+/* Callout enter animation */
+@keyframes calloutEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Callout exit animation */
+@keyframes calloutExit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.callout-entering {
+  animation: calloutEnter 300ms ease-out forwards;
+}
+
+.callout-exiting {
+  animation: calloutExit 300ms ease-in forwards;
+}
+
+/* Position adjustments for top-left callouts */
+.narrator-callout[style*="top-left"] {
+  animation: calloutEnter 300ms ease-out forwards;
+}
+
+/* Position adjustments for center callouts - override translateY transform */
+@keyframes calloutEnterCenter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes calloutExitCenter {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+}
+
+/* Position adjustments for bottom-center callouts - override translateX transform */
+@keyframes calloutEnterBottomCenter {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes calloutExitBottomCenter {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+}
+
+/* Position adjustments for top-center callouts */
+@keyframes calloutEnterTopCenter {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes calloutExitTopCenter {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+}
