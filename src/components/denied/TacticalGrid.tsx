@@ -1,15 +1,17 @@
 /**
  * TacticalGrid - Stealth Radar Aesthetic
- * v2.2 DIAMOND: Military radar display, not video game
+ * v2.3 BULLETPROOF: Military radar display with telemetry overlay
  *
  * - Background: Pure black
- * - Grid: Barely visible
- * - Flight path: Faint slate line
- * - Current position: Single bright dot
+ * - Grid: Barely visible radar crosshairs
+ * - Flight path: Faint slate line with ghost trail
+ * - Current position: Single bright dot with direction
  * - Waypoints: Dim markers, only current highlighted
+ * - Geofence: Dashed boundary, flashes RED on violation
+ * - Telemetry: ALT, SPD, HDG, GPS status overlay
  */
 
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState, useRef } from 'react';
 import type { DronePosition, ThreatData, ScenarioPhase, UnknownObject } from '../../constants/scenario';
 import { MAP_ZONES, FLIGHT_PATH, UNKNOWN_OBJECT_LOCATION } from '../../constants/scenario';
 import { COLORS } from '../../constants/colors';
@@ -28,6 +30,14 @@ interface TacticalGridProps {
   confidence?: number;
 }
 
+// Simulated telemetry data based on drone position and phase
+interface TelemetryData {
+  altitude: number;
+  speed: number;
+  heading: number;
+  gpsStatus: 'LOCKED' | 'DRIFT' | 'ACQUIRING';
+}
+
 export function TacticalGrid({
   dronePosition,
   threat,
@@ -40,7 +50,8 @@ export function TacticalGrid({
   currentWaypoint = 0,
   confidence = 0.99,
 }: TacticalGridProps) {
-  const [_fragmentSeed, setFragmentSeed] = useState(0);
+  const [geofenceFlash, setGeofenceFlash] = useState(false);
+  const lastPhaseRef = useRef(phase);
 
   // Check if in uncertainty zone
   const isUncertaintyPhase = [
@@ -49,15 +60,54 @@ export function TacticalGrid({
     'HUMAN_QUERY',
   ].includes(phase);
 
-  // Subtle grid animation during uncertainty
-  useEffect(() => {
-    if (isUncertaintyPhase && !interlockFreeze) {
-      const interval = setInterval(() => {
-        setFragmentSeed(s => s + 1);
-      }, 100);
-      return () => clearInterval(interval);
+  // Simulate telemetry based on position and phase
+  const telemetry: TelemetryData = useMemo(() => {
+    const baseAlt = 120;
+    const baseSpeed = 15;
+    // Calculate heading from rotation
+    const heading = Math.round((dronePosition.rotation + 45) % 360);
+
+    // GPS status based on phase
+    let gpsStatus: TelemetryData['gpsStatus'] = 'LOCKED';
+    if (isUncertaintyPhase) {
+      gpsStatus = 'DRIFT';
+    } else if (phase === 'HUMAN_RESPONSE' || phase === 'RACI_HANDOFF_BACK') {
+      gpsStatus = 'ACQUIRING';
     }
-  }, [isUncertaintyPhase, interlockFreeze]);
+
+    // Slight variations based on phase
+    const altVariation = isUncertaintyPhase ? -5 : 0;
+    const speedVariation = isUncertaintyPhase ? -3 : 0;
+
+    return {
+      altitude: baseAlt + altVariation,
+      speed: baseSpeed + speedVariation,
+      heading,
+      gpsStatus,
+    };
+  }, [dronePosition.rotation, phase, isUncertaintyPhase]);
+
+  // Geofence flash animation when uncertainty is detected
+  useEffect(() => {
+    if (phase === 'UNCERTAINTY_DETECTED' && lastPhaseRef.current !== 'UNCERTAINTY_DETECTED') {
+      setGeofenceFlash(true);
+      const flashInterval = setInterval(() => {
+        setGeofenceFlash(prev => !prev);
+      }, 300);
+
+      // Stop flashing after 3 seconds
+      const timeout = setTimeout(() => {
+        clearInterval(flashInterval);
+        setGeofenceFlash(true); // Keep it highlighted
+      }, 3000);
+
+      return () => {
+        clearInterval(flashInterval);
+        clearTimeout(timeout);
+      };
+    }
+    lastPhaseRef.current = phase;
+  }, [phase]);
 
   // Generate path string for completed trail
   const completedPathD = useMemo(() => {
@@ -121,10 +171,13 @@ export function TacticalGrid({
 
       {/* SVG Map */}
       <svg
-        viewBox="0 0 560 320"
-        className="w-full h-full"
+        viewBox="0 0 560 360"
+        className="w-full"
         preserveAspectRatio="xMidYMid meet"
-        style={{ marginTop: '40px' }}
+        style={{
+          marginTop: '40px',
+          height: 'calc(100% - 80px)',
+        }}
       >
         {/* Background */}
         <rect width="100%" height="100%" fill={COLORS.bgPrimary} />
@@ -165,18 +218,35 @@ export function TacticalGrid({
           <circle cx="280" cy="160" r="160" fill="none" stroke={COLORS.textTimestamp} strokeWidth="0.5" />
         </g>
 
-        {/* Uncertainty Zone - subtle */}
-        <g opacity={isUncertaintyPhase ? 0.15 : 0.05}>
+        {/* Geofence / GPS Bounds - THE KEY CONSTRAINT VISUALIZATION */}
+        <g>
           <rect
             x={MAP_ZONES.grey.x}
             y={MAP_ZONES.grey.y}
             width={MAP_ZONES.grey.width}
             height={MAP_ZONES.grey.height}
             fill="none"
-            stroke={COLORS.textTimestamp}
-            strokeWidth="1"
-            strokeDasharray="4 4"
+            stroke={isUncertaintyPhase && geofenceFlash ? COLORS.alertRed : COLORS.textTimestamp}
+            strokeWidth={isUncertaintyPhase ? 2 : 1}
+            strokeDasharray="8 4"
+            opacity={isUncertaintyPhase ? 0.8 : 0.3}
+            style={{
+              transition: 'stroke 0.15s, opacity 0.3s',
+            }}
           />
+          {/* Geofence label */}
+          <text
+            x={MAP_ZONES.grey.x + 5}
+            y={MAP_ZONES.grey.y - 5}
+            style={{
+              fontSize: '8px',
+              fontFamily: 'monospace',
+              fill: isUncertaintyPhase && geofenceFlash ? COLORS.alertRed : COLORS.textTimestamp,
+              opacity: isUncertaintyPhase ? 0.9 : 0.5,
+            }}
+          >
+            GEOFENCE / GPS BOUNDS
+          </text>
         </g>
 
         {/* Future path - very dim */}
@@ -262,20 +332,29 @@ export function TacticalGrid({
           );
         })}
 
-        {/* Unknown Object indicator */}
+        {/* GPS Drift Zone indicator - v2.3 BULLETPROOF */}
         {showUnknownObject && (
           <g className={isLowConfidence ? 'animate-pulse' : ''}>
+            {/* Drift zone circle */}
             <circle
               cx={UNKNOWN_OBJECT_LOCATION.x}
               cy={UNKNOWN_OBJECT_LOCATION.y}
-              r="8"
+              r="12"
               fill="none"
               stroke={COLORS.alertRed}
               strokeWidth="1.5"
-              strokeDasharray={unknownObject?.identified ? 'none' : '3 2'}
+              strokeDasharray={unknownObject?.identified ? 'none' : '4 2'}
+              opacity={0.6}
+            />
+            {/* Inner indicator */}
+            <circle
+              cx={UNKNOWN_OBJECT_LOCATION.x}
+              cy={UNKNOWN_OBJECT_LOCATION.y}
+              r="4"
+              fill={unknownObject?.identified ? COLORS.textMuted : COLORS.alertRed}
             />
             <text
-              x={UNKNOWN_OBJECT_LOCATION.x + 12}
+              x={UNKNOWN_OBJECT_LOCATION.x + 16}
               y={UNKNOWN_OBJECT_LOCATION.y - 5}
               style={{
                 fontSize: '8px',
@@ -283,7 +362,7 @@ export function TacticalGrid({
                 fill: COLORS.alertRed,
               }}
             >
-              {unknownObject?.identified ? unknownObject.identifiedAs : 'UNK_OBJ'}
+              {unknownObject?.identified ? unknownObject.identifiedAs : 'GPS_DRIFT'}
             </text>
           </g>
         )}
@@ -339,21 +418,73 @@ export function TacticalGrid({
         </text>
       </svg>
 
-      {/* Confidence indicator overlay */}
-      {isLowConfidence && (
-        <div
-          className="absolute bottom-3 left-3 px-2 py-1 z-20"
-          style={{
-            fontSize: '9px',
-            fontFamily: 'monospace',
-            color: COLORS.alertRed,
-            border: `1px solid ${COLORS.alertRed}`,
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-          }}
-        >
-          CONFIDENCE: {(confidence * 100).toFixed(0)}%
+      {/* Telemetry Overlay - Bottom bar */}
+      <div
+        className="absolute bottom-0 left-0 right-0 px-4 py-2 flex items-center justify-between z-20"
+        style={{
+          backgroundColor: 'rgba(9, 9, 11, 0.95)',
+          borderTop: `1px solid ${COLORS.borderBracket}`,
+        }}
+      >
+        <div className="flex items-center gap-6">
+          {/* Altitude */}
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: '9px', color: COLORS.textTimestamp }}>ALT</span>
+            <span style={{ fontSize: '11px', fontFamily: 'JetBrains Mono, monospace', color: COLORS.textSecondary }}>
+              {telemetry.altitude}m
+            </span>
+          </div>
+
+          {/* Speed */}
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: '9px', color: COLORS.textTimestamp }}>SPD</span>
+            <span style={{ fontSize: '11px', fontFamily: 'JetBrains Mono, monospace', color: COLORS.textSecondary }}>
+              {telemetry.speed}m/s
+            </span>
+          </div>
+
+          {/* Heading */}
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: '9px', color: COLORS.textTimestamp }}>HDG</span>
+            <span style={{ fontSize: '11px', fontFamily: 'JetBrains Mono, monospace', color: COLORS.textSecondary }}>
+              {String(telemetry.heading).padStart(3, '0')}°
+            </span>
+          </div>
+
+          {/* GPS Status */}
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: '9px', color: COLORS.textTimestamp }}>GPS</span>
+            <span
+              style={{
+                fontSize: '11px',
+                fontFamily: 'JetBrains Mono, monospace',
+                color: telemetry.gpsStatus === 'DRIFT' ? COLORS.alertRed :
+                       telemetry.gpsStatus === 'ACQUIRING' ? COLORS.alertAmber :
+                       COLORS.textSecondary,
+              }}
+              className={telemetry.gpsStatus === 'DRIFT' ? 'animate-pulse' : ''}
+            >
+              {telemetry.gpsStatus}
+            </span>
+          </div>
         </div>
-      )}
+
+        {/* Confidence indicator - moved to telemetry bar */}
+        {isLowConfidence && (
+          <div
+            className="px-2 py-1"
+            style={{
+              fontSize: '9px',
+              fontFamily: 'monospace',
+              color: COLORS.alertRed,
+              border: `1px solid ${COLORS.alertRed}`,
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            }}
+          >
+            CONFIDENCE: {(confidence * 100).toFixed(0)}%
+          </div>
+        )}
+      </div>
 
       {/* Interlock freeze overlay */}
       {interlockFreeze && (
