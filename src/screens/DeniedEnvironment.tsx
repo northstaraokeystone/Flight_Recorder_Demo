@@ -1,21 +1,34 @@
 /**
- * DeniedEnvironment - Main Demo Screen v2.2 DIAMOND
- * Governance-first narrative with CRAG fallback and RACI handoffs
+ * DeniedEnvironment - Main Demo Screen v2.3 BULLETPROOF
+ * FROM BROKEN TO BULLETPROOF: Governance-first narrative with GPS drift scenario
  *
  * Layout: Map (50%) | Event Log (25%) | Governance State (25%)
+ *
+ * KEY METRIC: If you can't identify WHO is responsible within 1 second,
+ * the UI has failed.
+ *
+ * v2.3 BULLETPROOF Changes:
+ * - Fixed React render loop (useRef for blockCount)
+ * - TacticalGrid with telemetry overlay (ALT, SPD, HDG, GPS)
+ * - Card-based event log (not scrolling Matrix text)
+ * - RACI matrix visual grid with stability gauge
+ * - TemporalKnowledgeGraph for AI reasoning visualization
+ * - GPS drift narrative (not unknown object)
  *
  * Narrative Timeline:
  * T+0:   Takeoff - RACI=AI_SYSTEM, CONFIDENCE=0.99
  * T+10:  Waypoint 1 - CONFIDENCE=0.98
  * T+20:  Waypoint 2 - CONFIDENCE=0.97
- * T+25:  Unknown object detected - CONFIDENCE=0.62 (RED)
- * T+26:  CRAG Fallback triggered - MODE=SUPERVISED
- * T+28:  Ground Control queried - RACI=HUMAN_IN_LOOP (THE PAUSE)
- * T+30:  Human response - CONFIDENCE=0.94 restored
- * T+32:  RACI handoff back - RACI=AI_SYSTEM
- * T+35:  Route resumed
- * T+45:  Mission complete
- * T+47:  Affidavit slides up
+ * T+25:  GPS DRIFT DETECTED - CONFIDENCE=0.62 (RED), stability drains
+ * T+27:  TEMPORAL RETRIEVAL - Graph shows GPS_DRIFT_2024-03
+ * T+29:  CRAG EXTERNAL QUERY - Graph shows FAA_Advisory_2024-07
+ * T+31:  RACI HANDOFF - SAFETY_OFFICER is ACCOUNTABLE (RED, 2s pause)
+ * T+33:  Human response - GPS recalibrated
+ * T+35:  RACI handoff back - RACI=AI_SYSTEM
+ * T+40:  Route resumed
+ * T+50:  Mission complete
+ * T+52:  Affidavit slides up
+ * T+57:  Trust Gap comparison
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -25,6 +38,7 @@ import {
   GovernancePanel,
   Affidavit,
   TrustGap,
+  TemporalKnowledgeGraph,
   createLedgerEntry,
 } from '../components/denied';
 import { createGovernanceLogEntry } from '../components/denied/CryptographicLedger';
@@ -77,7 +91,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
   // Log state
   const [governanceLog, setGovernanceLog] = useState<GovernanceLogEntry[]>([]);
   const [legacyEntries, setLegacyEntries] = useState<LedgerEntry[]>([]);
-  const [blockCount, setBlockCount] = useState(0);
+  const blockCountRef = useRef(0);
 
   // End state
   const [showAffidavit, setShowAffidavit] = useState(false);
@@ -88,7 +102,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
   const lastTickRef = useRef(Date.now());
   const startTimeRef = useRef(Date.now());
 
-  // Helper to add log entry
+  // Helper to add log entry - uses ref to avoid dependency loop
   const addLogEntry = useCallback((
     eventType: string,
     detail: string,
@@ -98,8 +112,8 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
     const elapsed = Date.now() - startTimeRef.current;
     const seconds = Math.floor(elapsed / 1000);
     const timestamp = `00:${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
-    const newBlock = blockCount + 1;
-    setBlockCount(newBlock);
+    blockCountRef.current += 1;
+    const newBlock = blockCountRef.current;
 
     const entry = createGovernanceLogEntry(newBlock, timestamp, eventType, detail, reasonCode, severity);
     setGovernanceLog(prev => [...prev, entry]);
@@ -107,7 +121,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
     // Also create legacy entry for compatibility
     const legacyEntry = createLedgerEntry(newBlock, timestamp, eventType, detail, false, false, reasonCode || undefined);
     setLegacyEntries(prev => [...prev, legacyEntry]);
-  }, [blockCount]);
+  }, []); // Empty deps - uses refs only
 
   // Phase transition logic with strategic pauses
   const transitionToPhase = useCallback((newPhase: ScenarioPhase) => {
@@ -363,7 +377,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
     setUnknownObject(null);
     setGovernanceLog([]);
     setLegacyEntries([]);
-    setBlockCount(0);
+    blockCountRef.current = 0;
     setShowAffidavit(false);
     setShowTrustGap(false);
     startTimeRef.current = Date.now();
@@ -387,7 +401,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       {/* 3-Panel Layout: Map 50% | Log 25% | Governance 25% */}
       <div className="three-pane-layout h-full">
         {/* Left Panel - Tactical Map (50%) */}
-        <div className="h-full">
+        <div className="h-full relative">
           <TacticalGrid
             dronePosition={dronePosition}
             threat={null}
@@ -396,6 +410,11 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
             unknownObject={unknownObject}
             currentWaypoint={currentWaypoint}
             confidence={governance.confidence}
+          />
+          {/* Temporal Knowledge Graph - bottom right of map */}
+          <TemporalKnowledgeGraph
+            phase={phase}
+            isVisible={true}
           />
         </div>
 
@@ -438,7 +457,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         humanOverrideDetails="Ground Control @ T+28"
         liabilityStatus="SHARED"
         regulatoryTrigger={null}
-        blocks={blockCount}
+        blocks={blockCountRef.current}
         receipts={governanceLog.length}
         onDismiss={() => transitionToPhase('TRUST_GAP')}
       />

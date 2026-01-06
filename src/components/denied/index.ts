@@ -16,6 +16,9 @@ export type { GovernanceState } from './GovernancePanel';
 export { Affidavit } from './Affidavit';
 export { TrustGap } from './TrustGap';
 
+// v2.3 BULLETPROOF: Temporal Knowledge Graph
+export { TemporalKnowledgeGraph } from './TemporalKnowledgeGraph';
+
 // Legacy components (kept for compatibility)
 export { ConnectionStatus } from './ConnectionStatus';
 export { ComplianceBar } from './ComplianceBar';

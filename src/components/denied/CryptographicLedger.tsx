@@ -1,8 +1,18 @@
 /**
- * CryptographicLedger - Terminal Style Event Log
- * v2.2 DIAMOND: Block IDs, Reason Codes, Hash references
+ * CryptographicLedger - Card-based Event Log
+ * v2.3 BULLETPROOF: Cards/blocks instead of scrolling Matrix text
  *
- * Format: [BLOCK 47] | 10:30:00 | EVENT_TYPE | REASON_CODE | 0x9a7f...
+ * Visual Hierarchy:
+ * - Standard events: Dark card, minimal
+ * - Warning/CRAG: Amber-600 left border
+ * - Critical/Intervention: Red-500 left border
+ * - RACI Handoff: Blue-500 left border
+ *
+ * Features:
+ * - Maximum 7 visible cards
+ * - New events at top
+ * - Hover for full receipt modal
+ * - Older events fade (opacity 0.7)
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -33,43 +43,143 @@ interface CryptographicLedgerProps {
   governanceLog?: GovernanceLogEntry[];
 }
 
-function getSeverityColor(eventType: string, isAlert: boolean): string {
-  if (isAlert) return COLORS.alertRed;
-  if (eventType.includes('UNCERTAINTY') || eventType.includes('CRAG')) return COLORS.alertRed;
-  if (eventType.includes('RACI_HANDOFF')) return COLORS.textPrimary;
-  if (eventType.includes('RESPONSE') || eventType.includes('COMPLETE')) return COLORS.textSecondary;
-  return COLORS.textSecondary;
+type CardSeverity = 'standard' | 'warning' | 'critical' | 'handoff' | 'success';
+
+function getCardSeverity(eventType: string, reasonCode: string | null): CardSeverity {
+  if (eventType.includes('UNCERTAINTY') || eventType.includes('CRAG')) return 'critical';
+  if (eventType.includes('RACI_HANDOFF')) return 'handoff';
+  if (eventType.includes('RESPONSE') || eventType.includes('COMPLETE') || eventType.includes('RESUMED') || eventType.includes('ACHIEVED')) return 'success';
+  if (reasonCode) return 'warning';
+  return 'standard';
+}
+
+function getCardBorderColor(severity: CardSeverity): string {
+  switch (severity) {
+    case 'critical': return '#ef4444'; // Red-500
+    case 'warning': return '#d97706';  // Amber-600
+    case 'handoff': return '#3b82f6';  // Blue-500
+    case 'success': return '#64748b';  // Slate-500
+    default: return 'transparent';
+  }
+}
+
+function getCardTextColor(severity: CardSeverity): string {
+  switch (severity) {
+    case 'critical': return COLORS.textPrimary;
+    case 'warning': return COLORS.textSecondary;
+    case 'handoff': return COLORS.textSecondary;
+    default: return COLORS.textMuted;
+  }
+}
+
+interface ReceiptModalProps {
+  entry: GovernanceLogEntry | LedgerEntry;
+  isGov: boolean;
+  onClose: () => void;
+}
+
+function ReceiptModal({ entry, isGov, onClose }: ReceiptModalProps) {
+  const blockId = isGov ? (entry as GovernanceLogEntry).blockId : (entry as LedgerEntry).blockId || (entry as LedgerEntry).id;
+  const timestamp = isGov ? (entry as GovernanceLogEntry).timestamp : (entry as LedgerEntry).timestamp;
+  const eventType = isGov ? (entry as GovernanceLogEntry).eventType : (entry as LedgerEntry).eventType;
+  const detail = isGov ? (entry as GovernanceLogEntry).detail : (entry as LedgerEntry).result;
+  const reasonCode = isGov ? (entry as GovernanceLogEntry).reasonCode : (entry as LedgerEntry).reasonCode;
+  const hash = isGov ? (entry as GovernanceLogEntry).hash : (entry as LedgerEntry).hash;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      onClick={onClose}
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+    >
+      <div
+        className="p-6 max-w-lg w-full mx-4"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          backgroundColor: COLORS.bgCard,
+          border: `1px solid ${COLORS.borderBracket}`,
+        }}
+      >
+        <div className="flex justify-between items-start mb-4">
+          <h3 style={{ color: COLORS.textPrimary, fontSize: '14px', fontWeight: 500 }}>
+            RECEIPT DETAILS
+          </h3>
+          <button
+            onClick={onClose}
+            style={{ color: COLORS.textMuted, fontSize: '16px' }}
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="space-y-3" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px' }}>
+          <div className="flex justify-between">
+            <span style={{ color: COLORS.textTimestamp }}>BLOCK</span>
+            <span style={{ color: COLORS.textSecondary }}>[{String(blockId).padStart(2, '0')}]</span>
+          </div>
+          <div className="flex justify-between">
+            <span style={{ color: COLORS.textTimestamp }}>TIMESTAMP</span>
+            <span style={{ color: COLORS.textSecondary }}>{timestamp}</span>
+          </div>
+          <div className="flex justify-between">
+            <span style={{ color: COLORS.textTimestamp }}>EVENT</span>
+            <span style={{ color: COLORS.textPrimary }}>{eventType}</span>
+          </div>
+          <div className="flex justify-between">
+            <span style={{ color: COLORS.textTimestamp }}>DETAIL</span>
+            <span style={{ color: COLORS.textSecondary }}>{detail}</span>
+          </div>
+          {reasonCode && (
+            <div className="flex justify-between">
+              <span style={{ color: COLORS.textTimestamp }}>REASON_CODE</span>
+              <span style={{ color: COLORS.alertRed }}>{reasonCode}</span>
+            </div>
+          )}
+
+          <div className="h-px my-3" style={{ backgroundColor: COLORS.borderBracket }} />
+
+          <div>
+            <span style={{ color: COLORS.textTimestamp, display: 'block', marginBottom: '4px' }}>SHA256</span>
+            <span style={{ color: COLORS.textHash, fontSize: '10px', wordBreak: 'break-all' }}>
+              {hash}
+            </span>
+          </div>
+
+          <div>
+            <span style={{ color: COLORS.textTimestamp, display: 'block', marginBottom: '4px' }}>MERKLE_ROOT</span>
+            <span style={{ color: COLORS.textHash, fontSize: '10px', wordBreak: 'break-all' }}>
+              0x{generateDualHash(`merkle-${blockId}`).sha256.slice(0, 32)}...
+            </span>
+          </div>
+
+          <div>
+            <span style={{ color: COLORS.textTimestamp, display: 'block', marginBottom: '4px' }}>PROOF_CHAIN</span>
+            <span style={{ color: COLORS.textMuted, fontSize: '10px' }}>
+              DEPTH: 4 | VERIFIED: ✓ | TAMPER: NONE
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function CryptographicLedger({
   entries,
   phase,
-  syncProgress,
+  syncProgress: _syncProgress,
   isOffline,
   governanceLog = [],
 }: CryptographicLedgerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [rippleIndex, setRippleIndex] = useState(-1);
+  const [selectedEntry, setSelectedEntry] = useState<GovernanceLogEntry | LedgerEntry | null>(null);
 
-  // Auto-scroll to bottom when new entries added
+  // Auto-scroll to top when new entries added (reversed order)
   useEffect(() => {
     if (containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+      containerRef.current.scrollTop = 0;
     }
   }, [entries, governanceLog]);
-
-  // Handle ripple animation during verification phases
-  useEffect(() => {
-    if (phase === 'BURST_SYNC' || phase === 'VERIFIED') {
-      const totalEntries = governanceLog.length || entries.length;
-      const targetIndex = Math.floor(syncProgress * totalEntries);
-      setRippleIndex(targetIndex);
-    } else if (phase === 'MISSION_COMPLETE' || phase === 'COMPLETE') {
-      setRippleIndex(governanceLog.length || entries.length);
-    } else {
-      setRippleIndex(-1);
-    }
-  }, [phase, syncProgress, entries.length, governanceLog.length]);
 
   const getModeText = () => {
     if (phase === 'AFFIDAVIT' || phase === 'TRUST_GAP' || phase === 'MISSION_COMPLETE') return 'VERIFIED';
@@ -79,6 +189,10 @@ export function CryptographicLedger({
 
   // Use governanceLog if available, otherwise fall back to entries
   const displayEntries = governanceLog.length > 0 ? governanceLog : entries;
+
+  // Reverse to show newest first, limit to 7 visible
+  const reversedEntries = [...displayEntries].reverse();
+  const maxVisible = 7;
 
   return (
     <div
@@ -121,126 +235,115 @@ export function CryptographicLedger({
         </div>
       </div>
 
-      {/* Column Headers */}
-      <div
-        className="flex px-3 py-1 border-b"
-        style={{
-          borderColor: COLORS.borderBracket,
-          fontSize: '9px',
-          color: COLORS.textTimestamp,
-          letterSpacing: '0.02em',
-        }}
-      >
-        <div style={{ width: '12%' }}>BLOCK</div>
-        <div style={{ width: '15%' }}>TIME</div>
-        <div style={{ width: '35%' }}>EVENT</div>
-        <div style={{ width: '20%' }}>CODE</div>
-        <div style={{ width: '18%' }}>HASH</div>
-      </div>
-
-      {/* Log entries */}
+      {/* Cards container */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-y-auto px-3 py-1"
-        style={{ fontSize: '10px', lineHeight: '1.6' }}
+        className="flex-1 overflow-y-auto px-2 py-2 space-y-2"
       >
         {displayEntries.length === 0 ? (
           <div
-            className="text-center py-4"
+            className="text-center py-8"
             style={{ color: COLORS.textTimestamp, fontSize: '10px' }}
           >
             AWAITING EVENTS...
           </div>
         ) : (
-          displayEntries.map((entry, index) => {
+          reversedEntries.slice(0, maxVisible).map((entry, displayIndex) => {
             const isGovEntry = 'blockId' in entry && 'detail' in entry;
-            const blockId = isGovEntry ? (entry as GovernanceLogEntry).blockId : (entry as LedgerEntry).blockId || index + 1;
+            const blockId = isGovEntry ? (entry as GovernanceLogEntry).blockId : (entry as LedgerEntry).blockId || (entry as LedgerEntry).id;
             const timestamp = isGovEntry ? (entry as GovernanceLogEntry).timestamp : (entry as LedgerEntry).timestamp;
             const eventType = isGovEntry ? (entry as GovernanceLogEntry).eventType : (entry as LedgerEntry).eventType;
             const detail = isGovEntry ? (entry as GovernanceLogEntry).detail : (entry as LedgerEntry).result;
-            const reasonCode = isGovEntry ? (entry as GovernanceLogEntry).reasonCode : (entry as LedgerEntry).reasonCode;
+            const reasonCode = isGovEntry ? (entry as GovernanceLogEntry).reasonCode : (entry as LedgerEntry).reasonCode || null;
             const hash = isGovEntry ? (entry as GovernanceLogEntry).hash : (entry as LedgerEntry).hash;
 
-            const isRippled = index <= rippleIndex;
-            const isAlert = eventType.includes('UNCERTAINTY') ||
-              eventType.includes('CRAG') ||
-              !!(entry as LedgerEntry).stopRule;
-            const eventColor = getSeverityColor(eventType, !!isAlert);
+            const severity = getCardSeverity(eventType, reasonCode);
+            const borderColor = getCardBorderColor(severity);
+            const textColor = getCardTextColor(severity);
+            const isNewest = displayIndex === 0;
+            const isFaded = displayIndex > 4; // Fade older entries
 
             return (
               <div
-                key={index}
-                className="flex items-center whitespace-nowrap py-0.5"
+                key={blockId}
+                className="p-3 cursor-pointer transition-opacity hover:opacity-100"
+                onClick={() => setSelectedEntry(entry)}
                 style={{
-                  animation: 'fadeIn 0.15s ease-in',
-                  borderLeft: isAlert ? `2px solid ${COLORS.alertRed}` : 'none',
-                  paddingLeft: isAlert ? '4px' : '0',
-                  marginLeft: isAlert ? '-4px' : '0',
+                  backgroundColor: COLORS.bgCard,
+                  borderLeft: severity !== 'standard' ? `3px solid ${borderColor}` : 'none',
+                  paddingLeft: severity !== 'standard' ? '12px' : '12px',
+                  opacity: isFaded ? 0.7 : 1,
+                  animation: isNewest ? 'fadeIn 0.2s ease-out' : 'none',
                 }}
               >
-                {/* Block ID */}
-                <div
-                  style={{
-                    width: '12%',
-                    color: isRippled ? COLORS.textMuted : COLORS.textTimestamp,
-                    transition: 'color 0.3s',
-                  }}
-                >
-                  [{blockId.toString().padStart(2, '0')}]
+                {/* Event type header */}
+                <div className="flex justify-between items-center mb-2">
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 500,
+                      color: textColor,
+                      letterSpacing: '0.02em',
+                    }}
+                  >
+                    ● {eventType}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '9px',
+                      color: COLORS.textTimestamp,
+                    }}
+                  >
+                    [BLOCK {String(blockId).padStart(2, '0')}]
+                  </span>
                 </div>
 
-                {/* Timestamp */}
-                <div
-                  style={{
-                    width: '15%',
-                    color: COLORS.textTimestamp,
-                  }}
-                >
-                  {timestamp}
-                </div>
+                {/* Content row */}
+                <div className="flex justify-between items-start">
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '9px', color: COLORS.textTimestamp, marginBottom: '2px' }}>
+                      TIME: {timestamp}
+                    </div>
+                    {detail && (
+                      <div style={{ fontSize: '10px', color: COLORS.textMuted }}>
+                        {detail.length > 35 ? `${detail.slice(0, 35)}...` : detail}
+                      </div>
+                    )}
+                    {reasonCode && (
+                      <div style={{ fontSize: '9px', color: COLORS.alertRed, marginTop: '4px' }}>
+                        REASON: {reasonCode}
+                      </div>
+                    )}
+                  </div>
 
-                {/* Event Type */}
-                <div
-                  style={{
-                    width: '35%',
-                    color: eventColor,
-                    fontWeight: isAlert ? 500 : 400,
-                  }}
-                >
-                  {eventType}
-                  {detail && (
-                    <span style={{ color: COLORS.textDim, marginLeft: '4px' }}>
-                      {detail.length > 15 ? `${detail.slice(0, 15)}...` : detail}
-                    </span>
-                  )}
-                </div>
-
-                {/* Reason Code */}
-                <div
-                  style={{
-                    width: '20%',
-                    color: reasonCode ? COLORS.alertRed : COLORS.textTimestamp,
-                    fontSize: '9px',
-                  }}
-                >
-                  {reasonCode || '—'}
-                </div>
-
-                {/* Hash */}
-                <div
-                  style={{
-                    width: '18%',
-                    color: isRippled ? COLORS.textMuted : COLORS.textHash,
-                    fontFamily: 'monospace',
-                    fontSize: '9px',
-                    transition: 'color 0.3s',
-                  }}
-                >
-                  0x{hash?.slice(0, 4)}...
+                  {/* Hash */}
+                  <div
+                    style={{
+                      fontSize: '8px',
+                      color: COLORS.textHash,
+                      fontFamily: 'JetBrains Mono, monospace',
+                    }}
+                  >
+                    0x{hash?.slice(0, 6)}...
+                  </div>
                 </div>
               </div>
             );
           })
+        )}
+
+        {/* "More entries" indicator */}
+        {reversedEntries.length > maxVisible && (
+          <div
+            className="text-center py-2"
+            style={{
+              fontSize: '9px',
+              color: COLORS.textTimestamp,
+              fontStyle: 'italic',
+            }}
+          >
+            +{reversedEntries.length - maxVisible} more entries...
+          </div>
         )}
       </div>
 
@@ -258,6 +361,15 @@ export function CryptographicLedger({
           CHAIN: {phase === 'AFFIDAVIT' || phase === 'MISSION_COMPLETE' ? 'VERIFIED' : 'ACTIVE'}
         </span>
       </div>
+
+      {/* Receipt Modal */}
+      {selectedEntry && (
+        <ReceiptModal
+          entry={selectedEntry}
+          isGov={'blockId' in selectedEntry && 'detail' in selectedEntry}
+          onClose={() => setSelectedEntry(null)}
+        />
+      )}
     </div>
   );
 }

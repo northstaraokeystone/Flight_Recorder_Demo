@@ -298,10 +298,10 @@ export const FLIGHT_PATH = [
   { x: 420, y: 145, label: 'DEST', phase: 'MISSION_COMPLETE' as const },
 ] as const;
 
-// Unknown object location (triggers CRAG)
+// GPS Drift zone location (triggers CRAG) - v2.3 BULLETPROOF
 export const UNKNOWN_OBJECT_LOCATION = {
-  id: 'UNK_OBJ_01',
-  label: 'UNKNOWN OBJECT',
+  id: 'GPS_DRIFT_01',
+  label: 'GPS DRIFT ZONE',
   x: 270,
   y: 145,
 };
@@ -314,18 +314,18 @@ export const THREAT_LOCATION = {
   y: 145,
 };
 
-// Key narrative moments
+// Key narrative moments - v2.3 GPS DRIFT scenario
 export const NARRATIVE_EVENTS = {
   UNCERTAINTY_DETECTED: {
-    message: 'Unidentified obstacle in flight path',
+    message: 'GPS signal degradation detected',
     reasonCode: 'RC006_CONTEXT_MISSING' as const,
   },
   CRAG_QUERY: {
-    message: 'Ground Control - Obstacle identification requested',
+    message: 'Ground Control - GPS recalibration requested',
   },
   HUMAN_RESPONSE: {
-    message: 'Proceed - Bird flock, not threat',
-    identifiedAs: 'BIRD_FLOCK',
+    message: 'Proceed - GPS recalibrated, signal restored',
+    identifiedAs: 'GPS_RESTORED',
   },
   RACI_HANDOFF_TO_HUMAN: {
     from: 'AI_SYSTEM' as const,
