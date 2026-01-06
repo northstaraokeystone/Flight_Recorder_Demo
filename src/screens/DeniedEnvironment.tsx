@@ -568,8 +568,9 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       }}
     >
       {/* ===== ACT I: BOOT SEQUENCE - v4.0 GLASS COCKPIT ===== */}
+      {/* FIX: Changed from absolute to fixed positioning with proper flex centering for dead-center text */}
       {demoPhase === 'BOOT' && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
           <div
             className="text-center"
             style={{
