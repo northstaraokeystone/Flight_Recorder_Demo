@@ -50,9 +50,9 @@ export function TacticalTheater({
   // Ghost path - projected collision course
   const ghostPathD = useMemo(() => {
     if (!showGhostPath || !threat) return '';
-    // From incident detection point to threat location
-    return `M 350 135 L ${THREAT_LOCATION.x} ${THREAT_LOCATION.y}`;
-  }, [showGhostPath, threat]);
+    // FIX: Vector now starts from drone's current position, not hardcoded waypoint
+    return `M ${dronePosition.x} ${dronePosition.y} L ${THREAT_LOCATION.x} ${THREAT_LOCATION.y}`;
+  }, [showGhostPath, threat, dronePosition.x, dronePosition.y]);
 
   const isInDeadZone = phase === 'OFFLINE' || phase === 'INCIDENT_DETECTED' ||
     phase === 'STOP_RULE_TRIGGERED' || phase === 'AVOIDANCE_EXECUTED';

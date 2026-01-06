@@ -568,13 +568,23 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       }}
     >
       {/* ===== ACT I: BOOT SEQUENCE - v4.0 GLASS COCKPIT ===== */}
-      {/* FIX: Changed from absolute to fixed positioning with proper flex centering for dead-center text */}
+      {/* FIX: Full viewport flexbox centering with explicit inline styles for dead-center text */}
       {demoPhase === 'BOOT' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100vw',
+            height: '100vh',
+          }}
+        >
           <div
             className="text-center"
             style={{
               fontFamily: 'JetBrains Mono, monospace',
+              textAlign: 'center',
             }}
           >
             {/* Boot text with typewriter effect - v4.0 spec - CENTERED + HUGE for investors */}
