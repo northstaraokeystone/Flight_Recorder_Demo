@@ -882,7 +882,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
               <div
                 className="flex-1 flex items-start justify-center pt-8"
                 style={{
-                  fontSize: '14px',
+                  fontSize: '16px',
                   fontWeight: 500,
                   color: '#94a3b8',
                   opacity: 0.6,
@@ -891,8 +891,8 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
                 AWAITING EVENTS...
               </div>
             ) : (
-              <div className="space-y-3">
-                {[...governanceLog].reverse().slice(0, 8).map((entry, idx) => {
+              <div className="space-y-4">
+                {[...governanceLog].reverse().slice(0, 7).map((entry, idx) => {
                   const isCritical = entry.severity === 'CRITICAL';
                   const isWarning = entry.severity === 'WARN';
                   const isSuccess = entry.severity === 'SUCCESS';
@@ -900,25 +900,25 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
                   // v4.0: Entry fade effect based on position
                   // Entry 1 (newest, top): opacity 1.0
                   // Entry 2: 0.9, Entry 3: 0.8, Entry 4: 0.6, Entry 5+: 0.4 → 0.2
-                  const opacityMap = [1.0, 0.9, 0.8, 0.6, 0.4, 0.3, 0.25, 0.2];
-                  const entryOpacity = opacityMap[idx] || 0.2;
+                  const opacityMap = [1.0, 0.9, 0.8, 0.65, 0.5, 0.35, 0.25];
+                  const entryOpacity = opacityMap[idx] || 0.25;
 
                   return (
                     <div
                       key={entry.blockId}
-                      className={`flex items-center gap-4 py-2 ${idx === 0 ? 'animate-fadeIn' : ''}`}
+                      className={`flex items-center gap-4 py-3 ${idx === 0 ? 'animate-fadeIn' : ''}`}
                       style={{
                         opacity: entryOpacity,
-                        lineHeight: '1.8',
+                        lineHeight: '2.0',
                         letterSpacing: '0.02em',
                         transition: 'opacity 0.5s ease-out',
                       }}
                     >
-                      {/* Block ID - 12px, hash style */}
+                      {/* Block ID - 14px, readable from distance */}
                       <span
                         style={{
-                          fontSize: '12px',
-                          fontWeight: 400,
+                          fontSize: '14px',
+                          fontWeight: 500,
                           color: '#94A3B8',
                           minWidth: '55px',
                         }}
@@ -926,33 +926,33 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
                         [{String(entry.blockId).padStart(2, '0')}]
                       </span>
 
-                      {/* Event type - 14px base, 18px critical (readable from 5 feet) */}
+                      {/* Event type - 18px base, 20px critical (readable from 5 feet) */}
                       <span
                         style={{
-                          fontSize: isCritical ? '18px' : '14px',
-                          fontWeight: isCritical ? 700 : 500,
-                          color: isCritical ? '#FCA5A5' :
-                                 isWarning ? '#fbbf24' :
+                          fontSize: isCritical ? '20px' : '18px',
+                          fontWeight: isCritical ? 700 : 600,
+                          color: isCritical ? '#F87171' :
+                                 isWarning ? '#FBBF24' :
                                  isSuccess ? '#F1F5F9' :
-                                 '#E2E8F0',
+                                 '#F1F5F9',
                           flex: 1,
-                          textShadow: isCritical ? '0 0 10px rgba(252, 165, 165, 0.5)' : 'none',
+                          textShadow: isCritical ? '0 0 12px rgba(248, 113, 113, 0.6)' : 'none',
                         }}
                       >
                         {isCritical && '⚠ '}{entry.eventType}
                         {entry.detail && (
-                          <span style={{ color: '#94A3B8', fontSize: '12px', marginLeft: '8px' }}>
+                          <span style={{ color: '#CBD5E1', fontSize: '16px', marginLeft: '12px', fontWeight: 500 }}>
                             {entry.detail}
                           </span>
                         )}
                       </span>
 
-                      {/* Timestamp */}
+                      {/* Timestamp - 14px, brighter */}
                       <span
                         style={{
-                          fontSize: '12px',
+                          fontSize: '14px',
                           fontWeight: 400,
-                          color: '#64748b',
+                          color: '#94A3B8',
                         }}
                       >
                         {entry.timestamp}
@@ -961,9 +961,9 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
                       {/* Hash snippet for proof */}
                       <span
                         style={{
-                          fontSize: '11px',
+                          fontSize: '12px',
                           fontWeight: 400,
-                          color: '#475569',
+                          color: '#64748B',
                         }}
                       >
                         [{entry.hash?.slice(0, 6) || '...'}]
@@ -978,9 +978,9 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
             <div
               className="mt-auto pt-4 text-center"
               style={{
-                fontSize: '11px',
-                color: '#64748b',
-                opacity: 0.6,
+                fontSize: '13px',
+                color: '#94A3B8',
+                opacity: 0.7,
               }}
             >
               {governanceLog.length} BLOCKS
