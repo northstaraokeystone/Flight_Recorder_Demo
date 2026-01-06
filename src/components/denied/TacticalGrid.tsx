@@ -210,15 +210,8 @@ export function TacticalGrid({
     }, '');
   }, [visitedPathIndex, worldOffset.x, worldOffset.y, CAMERA.ZOOM]);
 
-  // Future path (dimmer) - shows remaining waypoints
-  const futurePathD = useMemo(() => {
-    const futurePoints = FLIGHT_PATH.slice(Math.max(visitedPathIndex, 0));
-    if (futurePoints.length < 2) return '';
-    return futurePoints.reduce((acc, pt, i) => {
-      const screen = worldToScreen(pt.x, pt.y);
-      return acc + (i === 0 ? `M ${screen.x} ${screen.y}` : ` L ${screen.x} ${screen.y}`);
-    }, '');
-  }, [visitedPathIndex, worldOffset.x, worldOffset.y, CAMERA.ZOOM]);
+  // CLEAN SKY FIX: Future path calculation removed to reduce visual clutter
+  // The planned path ahead of drone is intentionally hidden for "quiet sky" effect
 
   // Active segment from last waypoint to drone (drone is fixed at center)
   const activeSegmentStart = useMemo(() => {
@@ -607,7 +600,7 @@ export function TacticalGrid({
           <svg width="300" height="200" style={{ overflow: 'visible' }}>
             {/* Leader line from drone position to callout */}
             {/* QUIET SKY: Consistent colors - #F87171 red for errors, #FBBF24 amber for corrections */}
-            {/* FIX: Vector origin now starts at drone position (270, 180) instead of (220, 130) */}
+            {/* FIX: Vector origin correctly at drone screen position - container is offset so line appears attached to drone */}
             <line
               x1="270"
               y1="180"
