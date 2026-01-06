@@ -32,24 +32,8 @@ import { COLORS } from '../constants/colors';
 import type { LedgerEntry } from '../components/denied/CryptographicLedger';
 import { generateDualHash } from '../utils/crypto';
 
-// Callout types for leader lines
-type CalloutType = 'GPS_DRIFT' | 'CRAG_FALLBACK' | 'RACI_HANDOFF' | 'CONFIDENCE_DROP';
-
-interface ActiveCallout {
-  type: CalloutType;
-  message: string;
-  severity: 'warning' | 'critical';
-}
-
-// v4.0: Leader Line for Action-Reaction Connectors
-interface LeaderLine {
-  id: string;
-  eventType: string;
-  hash: string;
-  severity: 'warning' | 'critical';
-  createdAt: number;
-  targetIndex: number; // Which log entry to connect to
-}
+// COCKPIT v1.0: System callout types REMOVED - only investor narrator callouts remain
+// Yellow tooltips (GPS_DRIFT, CRAG_FALLBACK, RACI_HANDOFF) eliminated per "Kill the System Jargon"
 
 
 // Screen border pulse state
@@ -102,12 +86,10 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
   const [, setLegacyEntries] = useState<LedgerEntry[]>([]);
   const blockCountRef = useRef(0);
 
-  // Cinematic HUD state
-  const [activeCallout, setActiveCallout] = useState<ActiveCallout | null>(null);
+  // Cinematic HUD state - COCKPIT v1.0: System callouts removed, border pulse remains
   const [borderPulse, setBorderPulse] = useState<BorderPulseState>('none');
   const [mapOpacity, setMapOpacity] = useState(0);
   const [showMerkleRoot, setShowMerkleRoot] = useState(false);
-  const [leaderLines, setLeaderLines] = useState<LeaderLine[]>([]);
 
   // End state
   const [showAffidavit, setShowAffidavit] = useState(false);
@@ -140,23 +122,8 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
     return generateDualHash(`merkle-root-${AFFIDAVIT_DATA.missionId}-final`).sha256;
   }, []);
 
-  // v4.0: Add leader line for Action-Reaction Connectors
-  const addLeaderLine = useCallback((eventType: string, hash: string, severity: 'warning' | 'critical') => {
-    const newLine: LeaderLine = {
-      id: `line-${Date.now()}`,
-      eventType,
-      hash,
-      severity,
-      createdAt: Date.now(),
-      targetIndex: 0, // Always connects to newest entry (top of terminal)
-    };
-    setLeaderLines(prev => [...prev, newLine]);
-
-    // Auto-remove after 5 seconds with fade
-    setTimeout(() => {
-      setLeaderLines(prev => prev.filter(l => l.id !== newLine.id));
-    }, 5000);
-  }, []);
+  // COCKPIT v1.0: Leader lines REMOVED per "Kill the System Jargon"
+  // Only investor narrator callouts remain for CFO-grade presentation
 
   // Helper to add log entry
   const addLogEntry = useCallback((
@@ -178,16 +145,19 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
     setLegacyEntries(prev => [...prev, legacyEntry]);
   }, []);
 
-  // Boot sequence effect - v4.0 GLASS COCKPIT enhanced cinematic
+  // Boot sequence effect - COCKPIT v1.0: 6-7 second intro with 2s phases
   useEffect(() => {
     if (!autoplay) return;
 
-    // v4.0: Boot sequence as per spec - 5 second intro
+    // COCKPIT v1.0: Boot sequence per spec - 2s per phase, ~6-7s total
+    // Phase 1: "INITIALIZING PROOF SYSTEM..." - 2000ms (fade in 300ms, hold, fade out 300ms)
+    // Phase 2: "ESTABLISHING SECURE LINK..." - 2000ms
+    // Phase 3: "SYSTEM LIVE" + "● ONLINE" - 2000ms
     const bootSteps = [
-      { time: 0, text: '', progress: 0 },                                    // T-5.0s: BLACK
-      { time: 1000, text: 'INITIALIZING PROOF CHAIN...', progress: 20 },     // T-4.0s
-      { time: 2500, text: 'LINKING MERKLE ANCHORS...', progress: 60 },       // T-2.5s
-      { time: 3500, text: 'SYSTEM LIVE', progress: 100 },                    // T-1.5s
+      { time: 0, text: '', progress: 0 },                                    // T-7.0s: BLACK
+      { time: 500, text: 'INITIALIZING PROOF SYSTEM...', progress: 25 },     // T-6.5s: Phase 1
+      { time: 2500, text: 'ESTABLISHING SECURE LINK...', progress: 50 },     // T-4.5s: Phase 2
+      { time: 4500, text: 'SYSTEM LIVE', progress: 100 },                    // T-2.5s: Phase 3
     ];
 
     bootSteps.forEach(step => {
@@ -197,24 +167,24 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       }, step.time);
     });
 
-    // Grid fades in at T-1.0s
+    // Grid fades in at T-1.5s
     setTimeout(() => {
       setMapOpacity(0.5); // Start fading in
-    }, 4000);
+    }, 5500);
 
     // Drone appears at T-0.5s, full opacity
     setTimeout(() => {
       setMapOpacity(1);
-    }, 4500);
+    }, 6500);
 
-    // Transition to running at T+0.0s
+    // Transition to running at T+0.0s (7 second intro total)
     setTimeout(() => {
       setDemoPhase('RUNNING');
       startTimeRef.current = Date.now();
       phaseStartRef.current = Date.now();
       setIsRunning(true);
       transitionToPhase('TAKEOFF');
-    }, 5000);
+    }, 7000);
   }, [autoplay]);
 
   // Phase transition logic
@@ -270,16 +240,10 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
           reasonCode: 'RC006_CONTEXT_MISSING',
         }));
 
-        // Cinematic effects: callout, border pulse
-        setActiveCallout({
-          type: 'GPS_DRIFT',
-          message: 'GPS signal degradation detected',
-          severity: 'critical',
-        });
+        // COCKPIT v1.0: System tooltips REMOVED - only investor narrator callouts remain
+        // Yellow GPS_DRIFT callout eliminated per "Kill the System Jargon"
         setBorderPulse('amber');
-        // v4.0: Leader line for GPS_DRIFT event
-        addLeaderLine('GPS_DRIFT', generateDualHash('gps-drift').sha256.slice(0, 8), 'critical');
-        // Investor Narrator: Mark anomaly detected
+        // Investor Narrator: Mark anomaly detected (THE MONEY SHOT callout handles CFO messaging)
         setIsAnomalyDetected(true);
 
         // BULLET TIME: FREEZE simulation for 3 seconds
@@ -296,15 +260,8 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
           crag: 'QUERYING',
           mode: 'SUPERVISED',
         }));
-
-        // Cinematic effects
-        setActiveCallout({
-          type: 'CRAG_FALLBACK',
-          message: 'Querying external knowledge',
-          severity: 'warning',
-        });
-        // v4.0: Leader line for CRAG fallback
-        addLeaderLine('CRAG_FALLBACK', generateDualHash('crag-fallback').sha256.slice(0, 8), 'warning');
+        // COCKPIT v1.0: CRAG_FALLBACK callout REMOVED per "Kill the System Jargon"
+        // Investor narrator provides all CFO-grade messaging
         break;
 
       case 'HUMAN_QUERY':
@@ -315,16 +272,9 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
           raci: 'HUMAN_IN_LOOP',
           crag: 'ACTIVE',
         }));
-
-        // Cinematic effects: THE KEY MOMENT
-        setActiveCallout({
-          type: 'RACI_HANDOFF',
-          message: 'Control to Safety Officer',
-          severity: 'critical',
-        });
+        // COCKPIT v1.0: RACI_HANDOFF callout REMOVED per "Kill the System Jargon"
+        // Border pulse remains for visual feedback
         setBorderPulse('red');
-        // v4.0: Leader line for RACI handoff - THE KEY MOMENT
-        addLeaderLine('RACI_HANDOFF', generateDualHash('raci-handoff').sha256.slice(0, 8), 'critical');
         break;
 
       case 'HUMAN_RESPONSE':
@@ -346,9 +296,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
           identified: true,
           identifiedAs: NARRATIVE_EVENTS.HUMAN_RESPONSE.identifiedAs,
         } : null);
-
-        // Cinematic effects
-        setActiveCallout(null);
+        // COCKPIT v1.0: Reset border pulse (no system callouts to clear)
         setBorderPulse('none');
         break;
 
@@ -404,7 +352,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
 
       // TRUST_GAP REMOVED - Demo ends on Affidavit (Deal-Killer #4)
     }
-  }, [addLogEntry, addLeaderLine]);
+  }, [addLogEntry]);
 
   // Main simulation loop
   useEffect(() => {
@@ -540,8 +488,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
     setGovernanceLog([]);
     setLegacyEntries([]);
     blockCountRef.current = 0;
-    setActiveCallout(null);
-    setLeaderLines([]);
+    // COCKPIT v1.0: System callouts removed, only reset border pulse
     setBorderPulse('none');
     setMapOpacity(0);
     setShowMerkleRoot(false);
@@ -554,12 +501,12 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
     setIsCrisisPaused(false);
     crisisPauseStartRef.current = null;
 
-    // v4.0: Restart boot sequence - 5 second intro
+    // COCKPIT v1.0: Restart boot sequence - 7 second intro (2s per phase)
     const bootSteps = [
       { time: 0, text: '', progress: 0 },
-      { time: 1000, text: 'INITIALIZING PROOF CHAIN...', progress: 20 },
-      { time: 2500, text: 'LINKING MERKLE ANCHORS...', progress: 60 },
-      { time: 3500, text: 'SYSTEM LIVE', progress: 100 },
+      { time: 500, text: 'INITIALIZING PROOF SYSTEM...', progress: 25 },
+      { time: 2500, text: 'ESTABLISHING SECURE LINK...', progress: 50 },
+      { time: 4500, text: 'SYSTEM LIVE', progress: 100 },
     ];
 
     bootSteps.forEach(step => {
@@ -572,11 +519,11 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
     // Grid fades in
     setTimeout(() => {
       setMapOpacity(0.5);
-    }, 4000);
+    }, 5500);
 
     setTimeout(() => {
       setMapOpacity(1);
-    }, 4500);
+    }, 6500);
 
     setTimeout(() => {
       setDemoPhase('RUNNING');
@@ -585,7 +532,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       lastTickRef.current = Date.now();
       setIsRunning(true);
       transitionToPhase('TAKEOFF');
-    }, 5000);
+    }, 7000);
   }, [transitionToPhase]);
 
   // Calculate flight time for affidavit
@@ -693,7 +640,6 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
           unknownObject={unknownObject}
           currentWaypoint={currentWaypoint}
           confidence={governance.confidence}
-          activeCallout={activeCallout}
         />
       </div>
 
@@ -710,13 +656,14 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         />
       )}
 
-      {/* ===== v4.0: F-35 HUD GAUGES - Top-center, fighter jet style ===== */}
+      {/* ===== COCKPIT v1.0: HUD GAUGES - Bottom-center, fighter jet style ===== */}
+      {/* LAYOUT FIX: Meters moved from TOP to BOTTOM CENTER per Cockpit Protocol */}
       {demoPhase === 'RUNNING' && (
         <div
           className="z-40"
           style={{
             position: 'fixed',
-            top: '20px',
+            bottom: '70px',  // COCKPIT: 60-80px from bottom, above browser chrome
             left: '50%',
             transform: 'translateX(-50%)',
             background: 'rgba(0, 0, 0, 0.6)',
@@ -727,6 +674,8 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
             display: 'flex',
             gap: '32px',
             alignItems: 'center',
+            opacity: 0.8,  // COCKPIT: 0.8 normal, 1.0 on change
+            transition: 'opacity 0.3s ease',
           }}
         >
           {/* CONFIDENCE Gauge */}
@@ -848,226 +797,128 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         </div>
       )}
 
-      {/* ===== v4.0: LEADER LINES SVG OVERLAY - Action-Reaction Connectors ===== */}
-      {demoPhase === 'RUNNING' && leaderLines.length > 0 && (
-        <svg
-          className="fixed inset-0 z-25 pointer-events-none"
-          style={{ width: '100vw', height: '100vh' }}
-        >
-          <defs>
-            {/* Glow filter for leader lines */}
-            <filter id="leader-glow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3" result="glow" />
-              <feMerge>
-                <feMergeNode in="glow" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
+      {/* COCKPIT v1.0: Leader Lines REMOVED - "Kill the System Jargon" */}
+      {/* Yellow tooltips with CRAG_FALLBACK, RACI_HANDOFF, hex addresses are eliminated */}
+      {/* Only investor narrator callouts remain for clean, CFO-grade presentation */}
 
-          {leaderLines.map((line, idx) => {
-            const age = Date.now() - line.createdAt;
-            const opacity = age > 4500 ? 0.3 : 1; // Fade in last 500ms
-            // QUIET SKY: Bright red for errors (#EF4444), bright amber for corrections (#FBBF24)
-            const lineColor = line.severity === 'critical' ? '#EF4444' : '#FBBF24';
-
-            // Calculate positions
-            // Drone is at 50%, 40% of viewport
-            const droneX = window.innerWidth * 0.5;
-            const droneY = window.innerHeight * 0.4;
-            // Terminal is at bottom 5%, center
-            const terminalY = window.innerHeight * 0.6 + (idx * 40); // Stagger endpoints
-            const terminalX = window.innerWidth * 0.5 + (idx * 30 - 30); // Offset for multiple lines
-
-            // Midpoint for label
-            const midX = (droneX + terminalX) / 2;
-            const midY = (droneY + terminalY) / 2;
-
-            return (
-              <g key={line.id} style={{ opacity, transition: 'opacity 0.5s' }}>
-                {/* Main leader line - solid, with glow */}
-                <line
-                  x1={droneX}
-                  y1={droneY}
-                  x2={terminalX}
-                  y2={terminalY}
-                  stroke={lineColor}
-                  strokeWidth="2"
-                  filter="url(#leader-glow)"
-                  className="leader-line"
-                  style={{
-                    strokeDasharray: 200,
-                    animation: 'leaderLineDraw 0.3s ease-out forwards',
-                  }}
-                />
-
-                {/* Label ON the line - v4.0 critical differentiator */}
-                <g transform={`translate(${midX}, ${midY})`}>
-                  {/* Label background */}
-                  <rect
-                    x="-70"
-                    y="-12"
-                    width="140"
-                    height="24"
-                    fill="rgba(9, 9, 11, 0.95)"
-                    stroke={lineColor}
-                    strokeWidth="1"
-                    rx="4"
-                  />
-                  {/* Label text - hash + event code */}
-                  <text
-                    textAnchor="middle"
-                    y="4"
-                    style={{
-                      fontSize: '11px',
-                      fontFamily: 'JetBrains Mono, monospace',
-                      fontWeight: 600,
-                      fill: lineColor,
-                    }}
-                  >
-                    {line.eventType} [0x{line.hash}...]
-                  </text>
-                </g>
-
-                {/* Endpoint marker at terminal */}
-                <circle
-                  cx={terminalX}
-                  cy={terminalY}
-                  r="5"
-                  fill={lineColor}
-                  className="animate-pulse"
-                />
-              </g>
-            );
-          })}
-        </svg>
-      )}
-
-      {/* ===== BOTTOM CENTER: Below-Fold Terminal - v4.0 GLASS COCKPIT ===== */}
-      {/* "Stream of Consciousness" falling away from the drone */}
+      {/* ===== COCKPIT v1.0: LEFT EDGE Terminal - Event Stream ===== */}
+      {/* LAYOUT FIX: Terminal moved from BOTTOM CENTER to LEFT EDGE per Cockpit Protocol */}
+      {/* "Out of primary focus - proof it's logging, not meant to be read in real-time" */}
       {demoPhase === 'RUNNING' && (
         <div
           className="z-30"
           style={{
             position: 'fixed',
-            bottom: '5%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '600px',
-            height: '300px',
-            maxHeight: '40vh',
-            // v4.0: Gradient fade - transparent top (near drone), opaque bottom
-            background: `linear-gradient(
-              to top,
-              rgba(0, 0, 0, 0.9) 0%,
-              rgba(0, 0, 0, 0.7) 50%,
-              rgba(0, 0, 0, 0) 100%
-            )`,
-            // v4.0: No visible container edges - terminal floats in space
-            border: 'none',
-            borderRadius: 0,
-            padding: '16px 24px',
+            top: 0,
+            left: 0,
+            width: '300px',        // COCKPIT: 280-320px max, narrow and unobtrusive
+            height: '100vh',       // COCKPIT: Full viewport height
+            background: 'rgba(0, 0, 0, 0.4)',  // COCKPIT: Subtle, not competing
+            borderRight: '1px solid rgba(255, 255, 255, 0.05)',  // COCKPIT: Minimal border
+            padding: '16px',
             overflow: 'hidden',
+            opacity: 0.7,          // COCKPIT: 0.6-0.7 "background process" feel
           }}
         >
-          {/* Log entries - Stream flows DOWN from drone */}
-          {/* v4.0: New logs at TOP (closest to drone), oldest fade toward bottom */}
+          {/* COCKPIT v1.0: Event stream - left-aligned, compact */}
           <div
             className="flex flex-col h-full overflow-hidden"
             style={{
               fontFamily: 'JetBrains Mono, monospace',
             }}
           >
+            {/* Stream header - subtle */}
+            <div
+              style={{
+                fontSize: '10px',
+                fontWeight: 600,
+                color: '#64748B',
+                letterSpacing: '0.1em',
+                marginBottom: '12px',
+                textTransform: 'uppercase',
+              }}
+            >
+              EVENT STREAM
+            </div>
+
             {governanceLog.length === 0 ? (
               <div
-                className="flex-1 flex items-start justify-center pt-8"
                 style={{
-                  fontSize: '16px',
+                  fontSize: '12px',
                   fontWeight: 500,
-                  color: '#94a3b8',
+                  color: '#64748b',
                   opacity: 0.6,
                 }}
               >
                 AWAITING EVENTS...
               </div>
             ) : (
-              <div className="space-y-4">
-                {[...governanceLog].reverse().slice(0, 7).map((entry, idx) => {
+              <div className="space-y-2 overflow-y-auto" style={{ flex: 1 }}>
+                {/* COCKPIT: Newest at top, show event type + timestamp only */}
+                {[...governanceLog].reverse().slice(0, 15).map((entry, idx) => {
                   const isCritical = entry.severity === 'CRITICAL';
                   const isWarning = entry.severity === 'WARN';
-                  const isSuccess = entry.severity === 'SUCCESS';
 
-                  // v4.0: Entry fade effect based on position
-                  // Entry 1 (newest, top): opacity 1.0
-                  // Entry 2: 0.9, Entry 3: 0.8, Entry 4: 0.6, Entry 5+: 0.4 → 0.2
-                  const opacityMap = [1.0, 0.9, 0.8, 0.65, 0.5, 0.35, 0.25];
-                  const entryOpacity = opacityMap[idx] || 0.25;
+                  // COCKPIT: Entry fade effect - recent entries brighter
+                  const opacityMap = [1.0, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35, 0.3];
+                  const entryOpacity = opacityMap[idx] || 0.3;
 
                   return (
                     <div
                       key={entry.blockId}
-                      className={`flex items-center gap-4 py-3 ${idx === 0 ? 'animate-fadeIn' : ''}`}
+                      className={`py-1 ${idx === 0 ? 'animate-fadeIn' : ''}`}
                       style={{
                         opacity: entryOpacity,
-                        lineHeight: '2.0',
-                        letterSpacing: '0.02em',
+                        lineHeight: '1.4',
                         transition: 'opacity 0.5s ease-out',
+                        textAlign: 'left',  // COCKPIT: Left-aligned
                       }}
                     >
-                      {/* Block ID - 14px, readable from distance */}
-                      <span
-                        style={{
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          color: '#94A3B8',
-                          minWidth: '55px',
-                        }}
-                      >
-                        [{String(entry.blockId).padStart(2, '0')}]
-                      </span>
+                      {/* COCKPIT: Compact format - [##] EVENT_TYPE  timestamp */}
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 500,
+                            color: '#64748B',
+                          }}
+                        >
+                          [{String(entry.blockId).padStart(2, '0')}]
+                        </span>
 
-                      {/* Event type - 18px base, 20px critical (readable from 5 feet) */}
-                      <span
-                        style={{
-                          fontSize: isCritical ? '20px' : '18px',
-                          fontWeight: isCritical ? 700 : 600,
-                          color: isCritical ? '#F87171' :
-                                 isWarning ? '#FBBF24' :
-                                 isSuccess ? '#F1F5F9' :
-                                 '#F1F5F9',
-                          flex: 1,
-                          textShadow: isCritical ? '0 0 12px rgba(248, 113, 113, 0.6)' : 'none',
-                        }}
-                      >
-                        {isCritical && '⚠ '}{entry.eventType}
-                        {entry.detail && (
-                          <span style={{ color: '#CBD5E1', fontSize: '16px', marginLeft: '12px', fontWeight: 500 }}>
-                            {entry.detail}
-                          </span>
-                        )}
-                      </span>
+                        <span
+                          style={{
+                            fontSize: isCritical ? '13px' : '12px',
+                            fontWeight: isCritical ? 700 : 500,
+                            color: isCritical ? '#F87171' :
+                                   isWarning ? '#FBBF24' :
+                                   '#CBD5E1',
+                            flex: 1,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {entry.eventType}
+                          {entry.detail && (
+                            <span style={{ color: '#94A3B8', marginLeft: '6px', fontSize: '11px' }}>
+                              {entry.detail}
+                            </span>
+                          )}
+                        </span>
+                      </div>
 
-                      {/* Timestamp - 14px, brighter */}
-                      <span
+                      {/* Timestamp on second line - subtle */}
+                      <div
                         style={{
-                          fontSize: '14px',
-                          fontWeight: 400,
-                          color: '#94A3B8',
+                          fontSize: '10px',
+                          color: '#475569',
+                          marginLeft: '32px',
+                          marginTop: '2px',
                         }}
                       >
                         {entry.timestamp}
-                      </span>
-
-                      {/* Hash snippet for proof */}
-                      <span
-                        style={{
-                          fontSize: '12px',
-                          fontWeight: 400,
-                          color: '#64748B',
-                        }}
-                      >
-                        [{entry.hash?.slice(0, 6) || '...'}]
-                      </span>
+                      </div>
                     </div>
                   );
                 })}
@@ -1076,14 +927,15 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
 
             {/* Block count - subtle at bottom */}
             <div
-              className="mt-auto pt-4 text-center"
+              className="mt-auto pt-4"
               style={{
-                fontSize: '13px',
-                color: '#94A3B8',
-                opacity: 0.7,
+                fontSize: '10px',
+                color: '#64748B',
+                opacity: 0.6,
+                textAlign: 'left',
               }}
             >
-              {governanceLog.length} BLOCKS
+              {governanceLog.length} BLOCKS LOGGED
             </div>
           </div>
         </div>
