@@ -1,63 +1,61 @@
 /**
- * DeniedEnvironment - Main Demo Screen v2.3 BULLETPROOF
- * FROM BROKEN TO BULLETPROOF: Governance-first narrative with GPS drift scenario
+ * DeniedEnvironment - CINEMATIC SINGULARITY v3.0
  *
- * Layout: Map (50%) | Event Log (25%) | Governance State (25%)
+ * THE PARADIGM SHIFT: From Cognitive Tennis to Cinematic HUD
  *
- * KEY METRIC: If you can't identify WHO is responsible within 1 second,
- * the UI has failed.
+ * KILLED:
+ * - Left/Right 3-pane split layout
+ * - Permanent governance panel
+ * - Floating popups
  *
- * v2.3 BULLETPROOF Changes:
- * - Fixed React render loop (useRef for blockCount)
- * - TacticalGrid with telemetry overlay (ALT, SPD, HDG, GPS)
- * - Card-based event log (not scrolling Matrix text)
- * - RACI matrix visual grid with stability gauge
- * - TemporalKnowledgeGraph for AI reasoning visualization
- * - GPS drift narrative (not unknown object)
+ * BORN:
+ * - Full-bleed map with camera-locked drone
+ * - Bottom-center terminal overlay for events
+ * - On-change governance badges
+ * - Leader line callouts
+ * - Screen border pulse effects
+ * - Three-Act Narrative Structure
  *
- * Narrative Timeline:
- * T+0:   Takeoff - RACI=AI_SYSTEM, CONFIDENCE=0.99
- * T+10:  Waypoint 1 - CONFIDENCE=0.98
- * T+20:  Waypoint 2 - CONFIDENCE=0.97
- * T+25:  GPS DRIFT DETECTED - CONFIDENCE=0.62 (RED), stability drains
- * T+27:  TEMPORAL RETRIEVAL - Graph shows GPS_DRIFT_2024-03
- * T+29:  CRAG EXTERNAL QUERY - Graph shows FAA_Advisory_2024-07
- * T+31:  RACI HANDOFF - SAFETY_OFFICER is ACCOUNTABLE (RED, 2s pause)
- * T+33:  Human response - GPS recalibrated
- * T+35:  RACI handoff back - RACI=AI_SYSTEM
- * T+40:  Route resumed
- * T+50:  Mission complete
- * T+52:  Affidavit slides up
- * T+57:  Trust Gap comparison
+ * THE 1-SECOND TEST:
+ * Can you follow the entire story without moving your eyes horizontally?
+ * Eye path: Center -> Down -> Center
+ * Never: Left -> Right -> Left -> Right
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  TacticalGrid,
-  CryptographicLedger,
-  GovernancePanel,
-  Affidavit,
-  TrustGap,
-  TemporalKnowledgeGraph,
-  createLedgerEntry,
-} from '../components/denied';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { TacticalGrid, Affidavit, TrustGap, createLedgerEntry } from '../components/denied';
 import { createGovernanceLogEntry } from '../components/denied/CryptographicLedger';
 import type { GovernanceState } from '../components/denied/GovernancePanel';
-import type {
-  ScenarioPhase,
-  GovernanceLogEntry,
-  DronePosition,
-  UnknownObject,
-} from '../constants/scenario';
-import {
-  TIMING,
-  FLIGHT_PATH,
-  UNKNOWN_OBJECT_LOCATION,
-  NARRATIVE_EVENTS,
-  AFFIDAVIT_DATA,
-} from '../constants/scenario';
+import type { ScenarioPhase, GovernanceLogEntry, DronePosition, UnknownObject } from '../constants/scenario';
+import { TIMING, FLIGHT_PATH, UNKNOWN_OBJECT_LOCATION, NARRATIVE_EVENTS, AFFIDAVIT_DATA } from '../constants/scenario';
 import { COLORS } from '../constants/colors';
 import type { LedgerEntry } from '../components/denied/CryptographicLedger';
+import { generateDualHash } from '../utils/crypto';
+
+// Callout types for leader lines
+type CalloutType = 'GPS_DRIFT' | 'CRAG_FALLBACK' | 'RACI_HANDOFF' | 'CONFIDENCE_DROP';
+
+interface ActiveCallout {
+  type: CalloutType;
+  message: string;
+  severity: 'warning' | 'critical';
+}
+
+// Governance badge for on-change display
+interface GovernanceBadge {
+  id: string;
+  type: 'RACI_HANDOFF' | 'MODE_CHANGE' | 'CONFIDENCE_DROP' | 'CRAG_ACTIVE';
+  title: string;
+  detail: string;
+  severity: 'info' | 'warning' | 'critical';
+  timestamp: number;
+}
+
+// Screen border pulse state
+type BorderPulseState = 'none' | 'amber' | 'red';
+
+// Demo phases for narrative wrapper
+type DemoPhase = 'BOOT' | 'RUNNING' | 'SEAL';
 
 interface DeniedEnvironmentProps {
   onComplete?: () => void;
@@ -65,10 +63,15 @@ interface DeniedEnvironmentProps {
 }
 
 export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: DeniedEnvironmentProps) {
+  // Demo phase (for boot sequence and end seal)
+  const [demoPhase, setDemoPhase] = useState<DemoPhase>('BOOT');
+  const [bootProgress, setBootProgress] = useState(0);
+  const [bootText, setBootText] = useState('INITIALIZING FLIGHT RECORDER v3.0...');
+
   // Core state
   const [phase, setPhase] = useState<ScenarioPhase>('TAKEOFF');
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [isRunning, setIsRunning] = useState(autoplay);
+  const [isRunning, setIsRunning] = useState(false);
 
   // Governance state
   const [governance, setGovernance] = useState<GovernanceState>({
@@ -90,8 +93,15 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
 
   // Log state
   const [governanceLog, setGovernanceLog] = useState<GovernanceLogEntry[]>([]);
-  const [legacyEntries, setLegacyEntries] = useState<LedgerEntry[]>([]);
+  const [, setLegacyEntries] = useState<LedgerEntry[]>([]);
   const blockCountRef = useRef(0);
+
+  // Cinematic HUD state
+  const [activeCallout, setActiveCallout] = useState<ActiveCallout | null>(null);
+  const [governanceBadges, setGovernanceBadges] = useState<GovernanceBadge[]>([]);
+  const [borderPulse, setBorderPulse] = useState<BorderPulseState>('none');
+  const [mapOpacity, setMapOpacity] = useState(0);
+  const [showMerkleRoot, setShowMerkleRoot] = useState(false);
 
   // End state
   const [showAffidavit, setShowAffidavit] = useState(false);
@@ -102,7 +112,27 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
   const lastTickRef = useRef(Date.now());
   const startTimeRef = useRef(Date.now());
 
-  // Helper to add log entry - uses ref to avoid dependency loop
+  // Generate Merkle root for seal
+  const merkleRoot = useMemo(() => {
+    return generateDualHash(`merkle-root-${AFFIDAVIT_DATA.missionId}-final`).sha256;
+  }, []);
+
+  // Add governance badge (on-change display)
+  const addGovernanceBadge = useCallback((badge: Omit<GovernanceBadge, 'id' | 'timestamp'>) => {
+    const newBadge: GovernanceBadge = {
+      ...badge,
+      id: `badge-${Date.now()}`,
+      timestamp: Date.now(),
+    };
+    setGovernanceBadges(prev => [...prev, newBadge]);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      setGovernanceBadges(prev => prev.filter(b => b.id !== newBadge.id));
+    }, 5000);
+  }, []);
+
+  // Helper to add log entry
   const addLogEntry = useCallback((
     eventType: string,
     detail: string,
@@ -118,17 +148,46 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
     const entry = createGovernanceLogEntry(newBlock, timestamp, eventType, detail, reasonCode, severity);
     setGovernanceLog(prev => [...prev, entry]);
 
-    // Also create legacy entry for compatibility
     const legacyEntry = createLedgerEntry(newBlock, timestamp, eventType, detail, false, false, reasonCode || undefined);
     setLegacyEntries(prev => [...prev, legacyEntry]);
-  }, []); // Empty deps - uses refs only
+  }, []);
 
-  // Phase transition logic with strategic pauses
+  // Boot sequence effect
+  useEffect(() => {
+    if (!autoplay) return;
+
+    // Boot sequence: 3 seconds
+    const bootSteps = [
+      { time: 0, text: 'INITIALIZING FLIGHT RECORDER v3.0...', progress: 0 },
+      { time: 500, text: 'LINKING PROVENANCE CHAIN...', progress: 30 },
+      { time: 1200, text: 'VERIFYING LEDGER INTEGRITY...', progress: 60 },
+      { time: 2000, text: 'CALIBRATING SENSORS...', progress: 85 },
+      { time: 2700, text: 'SYSTEM LIVE', progress: 100 },
+    ];
+
+    bootSteps.forEach(step => {
+      setTimeout(() => {
+        setBootText(step.text);
+        setBootProgress(step.progress);
+      }, step.time);
+    });
+
+    // Transition to running
+    setTimeout(() => {
+      setDemoPhase('RUNNING');
+      setMapOpacity(1);
+      startTimeRef.current = Date.now();
+      phaseStartRef.current = Date.now();
+      setIsRunning(true);
+      transitionToPhase('TAKEOFF');
+    }, 3000);
+  }, [autoplay]);
+
+  // Phase transition logic
   const transitionToPhase = useCallback((newPhase: ScenarioPhase) => {
     setPhase(newPhase);
     phaseStartRef.current = Date.now();
 
-    // Phase-specific actions
     switch (newPhase) {
       case 'TAKEOFF':
         addLogEntry('WAYPOINT_ACHIEVED', 'TAKEOFF', null, 'SUCCESS');
@@ -176,6 +235,20 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
           fallback: 'TRIGGERED',
           reasonCode: 'RC006_CONTEXT_MISSING',
         }));
+
+        // Cinematic effects: callout, badge, border pulse
+        setActiveCallout({
+          type: 'GPS_DRIFT',
+          message: 'GPS signal degradation detected',
+          severity: 'critical',
+        });
+        addGovernanceBadge({
+          type: 'CONFIDENCE_DROP',
+          title: 'CONFIDENCE DROP',
+          detail: '0.98 -> 0.62',
+          severity: 'critical',
+        });
+        setBorderPulse('amber');
         break;
 
       case 'CRAG_TRIGGERED':
@@ -185,16 +258,43 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
           crag: 'QUERYING',
           mode: 'SUPERVISED',
         }));
+
+        // Cinematic effects
+        setActiveCallout({
+          type: 'CRAG_FALLBACK',
+          message: 'Querying external knowledge',
+          severity: 'warning',
+        });
+        addGovernanceBadge({
+          type: 'CRAG_ACTIVE',
+          title: 'CRAG ACTIVE',
+          detail: 'External query in progress',
+          severity: 'warning',
+        });
         break;
 
       case 'HUMAN_QUERY':
         addLogEntry('EXTERNAL_QUERY', NARRATIVE_EVENTS.CRAG_QUERY.message, null, 'INFO');
-        addLogEntry('RACI_HANDOFF', 'AI→HUMAN', null, 'INFO');
+        addLogEntry('RACI_HANDOFF', 'AI -> HUMAN', null, 'INFO');
         setGovernance(prev => ({
           ...prev,
           raci: 'HUMAN_IN_LOOP',
           crag: 'ACTIVE',
         }));
+
+        // Cinematic effects: THE KEY MOMENT
+        setActiveCallout({
+          type: 'RACI_HANDOFF',
+          message: 'Control to Safety Officer',
+          severity: 'critical',
+        });
+        addGovernanceBadge({
+          type: 'RACI_HANDOFF',
+          title: 'RACI HANDOFF',
+          detail: 'AI -> HUMAN (Safety Officer)',
+          severity: 'critical',
+        });
+        setBorderPulse('red');
         break;
 
       case 'HUMAN_RESPONSE':
@@ -216,16 +316,34 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
           identified: true,
           identifiedAs: NARRATIVE_EVENTS.HUMAN_RESPONSE.identifiedAs,
         } : null);
+
+        // Cinematic effects
+        setActiveCallout(null);
+        addGovernanceBadge({
+          type: 'MODE_CHANGE',
+          title: 'HUMAN RESPONSE',
+          detail: 'GPS recalibrated - PROCEED',
+          severity: 'info',
+        });
+        setBorderPulse('none');
         break;
 
       case 'RACI_HANDOFF_BACK':
-        addLogEntry('RACI_HANDOFF', 'HUMAN→AI', null, 'INFO');
+        addLogEntry('RACI_HANDOFF', 'HUMAN -> AI', null, 'INFO');
         setGovernance(prev => ({
           ...prev,
           raci: 'AI_SYSTEM',
           mode: 'AUTONOMOUS',
           crag: 'STANDBY',
         }));
+
+        // Cinematic effects
+        addGovernanceBadge({
+          type: 'RACI_HANDOFF',
+          title: 'RACI HANDOFF',
+          detail: 'HUMAN -> AI (Control returned)',
+          severity: 'info',
+        });
         break;
 
       case 'ROUTE_RESUMED':
@@ -244,6 +362,18 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         addLogEntry('MISSION_COMPLETE', '5/5 waypoints', null, 'SUCCESS');
         addLogEntry('CHAIN_VERIFY', 'INTEGRITY 100%', null, 'SUCCESS');
         setGovernance(prev => ({ ...prev, confidence: 0.98 }));
+
+        // Start the seal sequence after 2 seconds
+        setTimeout(() => {
+          setDemoPhase('SEAL');
+          setMapOpacity(0);
+          setTimeout(() => {
+            setShowMerkleRoot(true);
+          }, 2000);
+          setTimeout(() => {
+            setShowAffidavit(true);
+          }, 6000);
+        }, 2000);
         break;
 
       case 'AFFIDAVIT':
@@ -256,7 +386,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         setShowTrustGap(true);
         break;
     }
-  }, [addLogEntry]);
+  }, [addLogEntry, addGovernanceBadge]);
 
   // Main simulation loop
   useEffect(() => {
@@ -268,7 +398,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       setElapsedTime(now - startTimeRef.current);
       lastTickRef.current = now;
 
-      // Phase transitions with timing from spec
+      // Phase transitions
       switch (phase) {
         case 'TAKEOFF':
           if (phaseElapsed >= TIMING.PHASE_TAKEOFF_DURATION) {
@@ -283,7 +413,6 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
           break;
 
         case 'WAYPOINT_2':
-          // 1.5s pause before uncertainty event
           if (phaseElapsed >= TIMING.PHASE_WAYPOINT_DURATION + TIMING.PHASE_UNCERTAINTY_PAUSE) {
             transitionToPhase('UNCERTAINTY_DETECTED');
           }
@@ -302,7 +431,6 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
           break;
 
         case 'HUMAN_QUERY':
-          // THE KEY PAUSE - 2 seconds waiting for human
           if (phaseElapsed >= TIMING.PHASE_HUMAN_QUERY_PAUSE) {
             transitionToPhase('HUMAN_RESPONSE');
           }
@@ -325,13 +453,6 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
             transitionToPhase('MISSION_COMPLETE');
           }
           break;
-
-        case 'MISSION_COMPLETE':
-          // 1.5s pause before affidavit slides up
-          if (phaseElapsed >= TIMING.PHASE_COMPLETE_DURATION + TIMING.PHASE_AFFIDAVIT_PAUSE) {
-            transitionToPhase('AFFIDAVIT');
-          }
-          break;
       }
 
       // Smooth drone position interpolation
@@ -350,17 +471,11 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
     return () => clearInterval(interval);
   }, [isRunning, phase, currentWaypoint, transitionToPhase]);
 
-  // Start on mount
-  useEffect(() => {
-    if (autoplay) {
-      startTimeRef.current = Date.now();
-      phaseStartRef.current = Date.now();
-      transitionToPhase('TAKEOFF');
-    }
-  }, [autoplay, transitionToPhase]);
-
   // Handle restart
   const handleRestart = useCallback(() => {
+    setDemoPhase('BOOT');
+    setBootProgress(0);
+    setBootText('INITIALIZING FLIGHT RECORDER v3.0...');
     setPhase('TAKEOFF');
     setElapsedTime(0);
     setGovernance({
@@ -378,13 +493,39 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
     setGovernanceLog([]);
     setLegacyEntries([]);
     blockCountRef.current = 0;
+    setActiveCallout(null);
+    setGovernanceBadges([]);
+    setBorderPulse('none');
+    setMapOpacity(0);
+    setShowMerkleRoot(false);
     setShowAffidavit(false);
     setShowTrustGap(false);
-    startTimeRef.current = Date.now();
-    phaseStartRef.current = Date.now();
-    lastTickRef.current = Date.now();
-    setIsRunning(true);
-    transitionToPhase('TAKEOFF');
+
+    // Restart boot sequence
+    const bootSteps = [
+      { time: 0, text: 'INITIALIZING FLIGHT RECORDER v3.0...', progress: 0 },
+      { time: 500, text: 'LINKING PROVENANCE CHAIN...', progress: 30 },
+      { time: 1200, text: 'VERIFYING LEDGER INTEGRITY...', progress: 60 },
+      { time: 2000, text: 'CALIBRATING SENSORS...', progress: 85 },
+      { time: 2700, text: 'SYSTEM LIVE', progress: 100 },
+    ];
+
+    bootSteps.forEach(step => {
+      setTimeout(() => {
+        setBootText(step.text);
+        setBootProgress(step.progress);
+      }, step.time);
+    });
+
+    setTimeout(() => {
+      setDemoPhase('RUNNING');
+      setMapOpacity(1);
+      startTimeRef.current = Date.now();
+      phaseStartRef.current = Date.now();
+      lastTickRef.current = Date.now();
+      setIsRunning(true);
+      transitionToPhase('TAKEOFF');
+    }, 3000);
   }, [transitionToPhase]);
 
   // Calculate flight time for affidavit
@@ -393,52 +534,370 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
   const seconds = Math.floor((flightTimeMs % 60000) / 1000);
   const flightTime = `00:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
+  // Get border pulse style
+  const getBorderPulseStyle = () => {
+    if (borderPulse === 'none') return {};
+    const color = borderPulse === 'red' ? COLORS.alertRed : '#d97706';
+    return {
+      boxShadow: `inset 0 0 60px ${color}40, inset 0 0 120px ${color}20`,
+      animation: 'borderPulseGlow 1.5s ease-in-out infinite',
+    };
+  };
+
   return (
     <div
-      className="w-full h-screen overflow-hidden"
-      style={{ backgroundColor: COLORS.bgPrimary }}
+      className="w-full h-screen overflow-hidden relative"
+      style={{
+        backgroundColor: COLORS.bgPrimary,
+        ...getBorderPulseStyle(),
+      }}
     >
-      {/* 3-Panel Layout: Map 50% | Log 25% | Governance 25% */}
-      <div className="three-pane-layout h-full">
-        {/* Left Panel - Tactical Map (50%) */}
-        <div className="h-full relative">
-          <TacticalGrid
-            dronePosition={dronePosition}
-            threat={null}
-            phase={phase}
-            visitedPathIndex={visitedPathIndex}
-            unknownObject={unknownObject}
-            currentWaypoint={currentWaypoint}
-            confidence={governance.confidence}
-          />
-          {/* Temporal Knowledge Graph - bottom right of map */}
-          <TemporalKnowledgeGraph
-            phase={phase}
-            isVisible={true}
-          />
-        </div>
+      {/* ===== ACT I: BOOT SEQUENCE ===== */}
+      {demoPhase === 'BOOT' && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center">
+          <div
+            className="text-center"
+            style={{
+              fontFamily: 'JetBrains Mono, monospace',
+            }}
+          >
+            {/* Boot text with typewriter effect */}
+            <div
+              className="mb-6"
+              style={{
+                fontSize: '14px',
+                color: bootProgress === 100 ? COLORS.textPrimary : COLORS.textMuted,
+                letterSpacing: '0.05em',
+                transition: 'color 0.3s',
+              }}
+            >
+              {bootText}
+              {bootProgress < 100 && <span className="typewriter-cursor" />}
+            </div>
 
-        {/* Middle Panel - Event Log (25%) */}
-        <div className="h-full">
-          <CryptographicLedger
-            entries={legacyEntries}
-            phase={phase}
-            syncProgress={1}
-            isOffline={false}
-            governanceLog={governanceLog}
-          />
+            {/* Progress bar */}
+            {bootProgress < 100 && (
+              <div
+                className="w-64 h-1 mx-auto"
+                style={{
+                  backgroundColor: COLORS.bgCard,
+                  borderRadius: '2px',
+                }}
+              >
+                <div
+                  className="h-full transition-all duration-300"
+                  style={{
+                    width: `${bootProgress}%`,
+                    backgroundColor: COLORS.textMuted,
+                    borderRadius: '2px',
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
+      )}
 
-        {/* Right Panel - Governance State (25%) */}
-        <div className="h-full">
-          <GovernancePanel
-            state={governance}
-            isOffline={false}
-          />
-        </div>
+      {/* ===== ACT II: THE MISSION (Full-bleed map) ===== */}
+      <div
+        className="absolute inset-0 transition-opacity duration-1000"
+        style={{ opacity: mapOpacity }}
+      >
+        <TacticalGrid
+          dronePosition={dronePosition}
+          phase={phase}
+          visitedPathIndex={visitedPathIndex}
+          unknownObject={unknownObject}
+          currentWaypoint={currentWaypoint}
+          confidence={governance.confidence}
+          activeCallout={activeCallout}
+        />
       </div>
 
-      {/* Affidavit Overlay - slides up from bottom */}
+      {/* ===== BOTTOM CENTER: Event Log Overlay ===== */}
+      {demoPhase === 'RUNNING' && (
+        <div
+          className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-30"
+          style={{
+            width: '100%',
+            maxWidth: '600px',
+            padding: '0 16px',
+          }}
+        >
+          <div
+            className="rounded-t-lg overflow-hidden"
+            style={{
+              backgroundColor: 'rgba(9, 9, 11, 0.85)',
+              backdropFilter: 'blur(8px)',
+              border: `1px solid ${COLORS.borderBracket}`,
+              borderBottom: 'none',
+              maxHeight: '200px',
+            }}
+          >
+            {/* Header */}
+            <div
+              className="px-4 py-2 flex justify-between items-center"
+              style={{
+                borderBottom: `1px solid ${COLORS.borderBracket}`,
+                backgroundColor: 'rgba(9, 9, 11, 0.95)',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 500,
+                  letterSpacing: '0.1em',
+                  color: COLORS.textMuted,
+                }}
+              >
+                EVENT STREAM
+              </span>
+              <span
+                style={{
+                  fontSize: '9px',
+                  color: COLORS.textTimestamp,
+                  fontFamily: 'JetBrains Mono, monospace',
+                }}
+              >
+                BLOCKS: {governanceLog.length}
+              </span>
+            </div>
+
+            {/* Log entries - scroll upward (newest at bottom, visually on top) */}
+            <div
+              className="overflow-y-auto px-4 py-2"
+              style={{ maxHeight: '160px' }}
+            >
+              {governanceLog.length === 0 ? (
+                <div
+                  className="text-center py-4"
+                  style={{
+                    fontSize: '10px',
+                    color: COLORS.textTimestamp,
+                    fontFamily: 'JetBrains Mono, monospace',
+                  }}
+                >
+                  AWAITING EVENTS...
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {[...governanceLog].reverse().slice(0, 6).map((entry, idx) => {
+                    const isNewest = idx === 0;
+                    const isCritical = entry.severity === 'CRITICAL';
+                    const isWarning = entry.severity === 'WARN';
+                    const isSuccess = entry.severity === 'SUCCESS';
+
+                    return (
+                      <div
+                        key={entry.blockId}
+                        className={`flex items-start gap-3 py-2 px-3 rounded ${isNewest ? 'animate-fadeIn' : ''}`}
+                        style={{
+                          backgroundColor: isCritical ? 'rgba(239, 68, 68, 0.1)' :
+                                          isWarning ? 'rgba(217, 119, 6, 0.08)' :
+                                          isSuccess ? 'rgba(100, 116, 139, 0.08)' :
+                                          'transparent',
+                          borderLeft: `3px solid ${
+                            isCritical ? COLORS.alertRed :
+                            isWarning ? '#d97706' :
+                            isSuccess ? COLORS.textMuted :
+                            'transparent'
+                          }`,
+                          opacity: idx > 3 ? 0.6 : 1,
+                          lineHeight: '1.6',
+                        }}
+                      >
+                        {/* Block ID */}
+                        <span
+                          style={{
+                            fontSize: '9px',
+                            color: COLORS.textTimestamp,
+                            fontFamily: 'JetBrains Mono, monospace',
+                            minWidth: '45px',
+                          }}
+                        >
+                          [{String(entry.blockId).padStart(2, '0')}]
+                        </span>
+
+                        {/* Event type */}
+                        <span
+                          style={{
+                            fontSize: '10px',
+                            color: isCritical ? COLORS.alertRed :
+                                   isWarning ? '#d97706' :
+                                   isSuccess ? COLORS.textSecondary :
+                                   COLORS.textMuted,
+                            fontFamily: 'JetBrains Mono, monospace',
+                            fontWeight: 500,
+                            flex: 1,
+                          }}
+                        >
+                          {entry.eventType}
+                        </span>
+
+                        {/* Timestamp */}
+                        <span
+                          style={{
+                            fontSize: '9px',
+                            color: COLORS.textTimestamp,
+                            fontFamily: 'JetBrains Mono, monospace',
+                          }}
+                        >
+                          {entry.timestamp}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== TOP RIGHT: Governance Badges (On-Change Only) ===== */}
+      <div className="absolute top-4 right-4 z-40 space-y-2">
+        {governanceBadges.map(badge => (
+          <div
+            key={badge.id}
+            className="animate-fadeIn"
+            style={{
+              backgroundColor: 'rgba(9, 9, 11, 0.95)',
+              backdropFilter: 'blur(4px)',
+              border: `1px solid ${
+                badge.severity === 'critical' ? COLORS.alertRed :
+                badge.severity === 'warning' ? '#d97706' :
+                COLORS.borderBracket
+              }`,
+              borderLeft: `4px solid ${
+                badge.severity === 'critical' ? COLORS.alertRed :
+                badge.severity === 'warning' ? '#d97706' :
+                COLORS.textMuted
+              }`,
+              borderRadius: '4px',
+              padding: '12px 16px',
+              maxWidth: '220px',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '10px',
+                fontWeight: 600,
+                color: badge.severity === 'critical' ? COLORS.alertRed :
+                       badge.severity === 'warning' ? '#d97706' :
+                       COLORS.textSecondary,
+                letterSpacing: '0.05em',
+                marginBottom: '4px',
+              }}
+            >
+              {badge.title}
+            </div>
+            <div
+              style={{
+                fontSize: '11px',
+                color: COLORS.textMuted,
+                fontFamily: 'JetBrains Mono, monospace',
+                lineHeight: '1.5',
+              }}
+            >
+              {badge.detail}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ===== ACT III: THE SEAL (Merkle Root) ===== */}
+      {demoPhase === 'SEAL' && (
+        <div
+          className="absolute inset-0 z-40 flex flex-col items-center justify-center transition-opacity duration-2000"
+          style={{
+            backgroundColor: COLORS.bgPrimary,
+            opacity: showMerkleRoot ? 1 : 0,
+          }}
+        >
+          {showMerkleRoot && !showAffidavit && (
+            <div className="text-center animate-fadeIn">
+              {/* Merkle Root Label */}
+              <div
+                style={{
+                  fontSize: '11px',
+                  color: COLORS.textTimestamp,
+                  letterSpacing: '0.15em',
+                  marginBottom: '16px',
+                }}
+              >
+                MERKLE ROOT
+              </div>
+
+              {/* The Hash - The single proof */}
+              <div
+                className="px-6 py-4 mb-8"
+                style={{
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fontSize: '14px',
+                  color: COLORS.textPrimary,
+                  letterSpacing: '0.05em',
+                  textShadow: '0 0 20px rgba(248, 250, 252, 0.3)',
+                  animation: 'merkleGlow 4s ease-in-out infinite',
+                }}
+              >
+                0x{merkleRoot}
+              </div>
+
+              {/* Status */}
+              <div
+                style={{
+                  fontSize: '12px',
+                  color: COLORS.textSecondary,
+                  letterSpacing: '0.1em',
+                  marginBottom: '8px',
+                }}
+              >
+                SESSION SECURED
+              </div>
+              <div
+                style={{
+                  fontSize: '10px',
+                  color: COLORS.textTimestamp,
+                }}
+              >
+                INTEGRITY VERIFIED
+              </div>
+
+              {/* Block count */}
+              <div
+                className="mt-6"
+                style={{
+                  fontSize: '10px',
+                  color: COLORS.textTimestamp,
+                  fontFamily: 'JetBrains Mono, monospace',
+                }}
+              >
+                [{blockCountRef.current} BLOCKS] [{governanceLog.length} RECEIPTS]
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ===== Phase indicator (small, bottom left) ===== */}
+      {demoPhase === 'RUNNING' && (
+        <div
+          className="fixed bottom-4 left-4 px-3 py-2 z-30"
+          style={{
+            backgroundColor: 'rgba(9, 9, 11, 0.85)',
+            backdropFilter: 'blur(4px)',
+            border: `1px solid ${COLORS.borderBracket}`,
+            borderRadius: '4px',
+            fontSize: '10px',
+            fontFamily: 'JetBrains Mono, monospace',
+            color: COLORS.textTimestamp,
+          }}
+        >
+          T+{Math.floor(elapsedTime / 1000)}s
+        </div>
+      )}
+
+      {/* ===== Affidavit Overlay ===== */}
       <Affidavit
         isVisible={showAffidavit}
         missionId={AFFIDAVIT_DATA.missionId}
@@ -462,26 +921,11 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         onDismiss={() => transitionToPhase('TRUST_GAP')}
       />
 
-      {/* Trust Gap Comparison - "WHY BLACK BOXES FAIL" */}
+      {/* ===== Trust Gap Comparison ===== */}
       <TrustGap
         isVisible={showTrustGap}
         onRestart={handleRestart}
       />
-
-      {/* Phase indicator */}
-      <div
-        className="fixed bottom-4 left-4 px-3 py-2"
-        style={{
-          backgroundColor: 'rgba(9, 9, 11, 0.9)',
-          border: `1px solid ${COLORS.borderBracket}`,
-          fontSize: '10px',
-          fontFamily: 'monospace',
-          color: COLORS.textMuted,
-          zIndex: 40,
-        }}
-      >
-        PHASE: {phase} | T+{Math.floor(elapsedTime / 1000)}s
-      </div>
     </div>
   );
 }
