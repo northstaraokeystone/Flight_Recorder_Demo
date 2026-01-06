@@ -447,12 +447,29 @@ export function TacticalGrid({
           )}
         </g>
 
-        {/* DRONE LAYER - Fixed at center, never moves */}
-        {/* v4.0 GLASS COCKPIT: CHEVRON (Λ) - The protagonist of the film */}
-        <g transform={`translate(${DRONE_SCREEN_X}, ${DRONE_SCREEN_Y})`}>
-          {/* Outer glow effect */}
+      </svg>
+
+      {/* ===== DRONE LAYER - FIXED AT SCREEN CENTER ===== */}
+      {/* Moved outside SVG for guaranteed screen positioning */}
+      <div
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: '40%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 50,
+          pointerEvents: 'none',
+        }}
+      >
+        <svg
+          width={DRONE_VISUAL.SIZE * 2}
+          height={DRONE_VISUAL.SIZE * 2}
+          viewBox={`${-DRONE_VISUAL.SIZE} ${-DRONE_VISUAL.SIZE} ${DRONE_VISUAL.SIZE * 2} ${DRONE_VISUAL.SIZE * 2}`}
+          style={{ overflow: 'visible' }}
+        >
+          {/* Glow filter definition */}
           <defs>
-            <filter id="drone-glow-v4" x="-100%" y="-100%" width="300%" height="300%">
+            <filter id="drone-glow-fixed" x="-100%" y="-100%" width="300%" height="300%">
               <feGaussianBlur stdDeviation="4" result="glow" />
               <feMerge>
                 <feMergeNode in="glow" />
@@ -473,7 +490,7 @@ export function TacticalGrid({
           {/* CHEVRON (Λ) - The main drone visual */}
           <g
             transform={`rotate(${dronePosition.rotation})`}
-            filter="url(#drone-glow-v4)"
+            filter="url(#drone-glow-fixed)"
           >
             {/* Main chevron shape - 40-50px, 3px stroke */}
             <path
@@ -505,33 +522,43 @@ export function TacticalGrid({
               opacity="0.7"
             />
           </g>
-        </g>
+        </svg>
 
-        {/* Drone label - fixed below drone, v4.0 readable */}
-        <text
-          x={DRONE_SCREEN_X}
-          y={DRONE_SCREEN_Y + DRONE_VISUAL.SIZE / 2 + 20}
-          textAnchor="middle"
+        {/* Drone label - below the drone */}
+        <div
           style={{
+            textAlign: 'center',
+            marginTop: '8px',
             fontSize: '12px',
             fontWeight: 500,
             fontFamily: 'JetBrains Mono, monospace',
-            fill: COLORS.textSecondary,
+            color: COLORS.textSecondary,
             letterSpacing: '0.08em',
           }}
         >
           UAV_01
-        </text>
+        </div>
+      </div>
 
-        {/* LEADER LINE & CALLOUT - DEAL-KILLER #2 READABLE TEXT */}
-        {calloutVisible && activeCallout && (
-          <g className="callout-layer animate-fadeIn">
-            {/* Leader line from drone to callout */}
+      {/* LEADER LINE & CALLOUT - Rendered as fixed overlay */}
+      {calloutVisible && activeCallout && (
+        <div
+          style={{
+            position: 'absolute',
+            left: 'calc(50% - 120px)',
+            top: 'calc(40% - 80px)',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 51,
+            pointerEvents: 'none',
+          }}
+        >
+          <svg width="300" height="200" style={{ overflow: 'visible' }}>
+            {/* Leader line from drone position to callout */}
             <line
-              x1={DRONE_SCREEN_X}
-              y1={DRONE_SCREEN_Y}
-              x2={DRONE_SCREEN_X - 120}
-              y2={DRONE_SCREEN_Y - 80}
+              x1="220"
+              y1="130"
+              x2="150"
+              y2="100"
               stroke={activeCallout.severity === 'critical' ? '#FCA5A5' : '#fbbf24'}
               strokeWidth="3"
               strokeDasharray="6 3"
@@ -539,8 +566,8 @@ export function TacticalGrid({
                 filter: `drop-shadow(0 0 6px ${activeCallout.severity === 'critical' ? '#FCA5A5' : '#fbbf24'})`,
               }}
             />
-            {/* Callout box - LARGER for readability */}
-            <g transform={`translate(${DRONE_SCREEN_X - 120}, ${DRONE_SCREEN_Y - 80})`}>
+            {/* Callout box */}
+            <g transform="translate(150, 100)">
               <rect
                 x="-100"
                 y="-40"
@@ -560,7 +587,7 @@ export function TacticalGrid({
                 fill={activeCallout.severity === 'critical' ? '#FCA5A5' : '#fbbf24'}
                 rx="2"
               />
-              {/* Callout text - 14px min, readable from 10 feet */}
+              {/* Callout text */}
               <text
                 x="-90"
                 y="-20"
@@ -588,9 +615,9 @@ export function TacticalGrid({
                   : activeCallout.message}
               </text>
             </g>
-          </g>
-        )}
-      </svg>
+          </svg>
+        </div>
+      )}
 
       {/* Telemetry Overlay - Top left corner - DEAL-KILLER #2 TEXT SIZES */}
       <div
