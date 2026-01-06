@@ -1,101 +1,108 @@
 /**
- * AI Flight Recorder Demo
- * "The Unalterable Engagement" - Decision Provenance for Autonomous Systems
+ * AI Flight Recorder v3.0
+ * "Tamper-Evident Assurance for Autonomy in Denied Environments"
+ *
+ * Offline Fiduciary Continuity Platform
+ * - Lost signal = preserved proof
+ * - Verifiable Autonomy Assurance
  */
 
 import { useState, useCallback } from 'react';
-import { useScreenNavigation } from './hooks/useScreenNavigation';
-import {
-  MissionContext,
-  LiveMission,
-  DecisionExplorer,
-  TamperingConsole,
-  Rejection,
-  Comparison,
-  Close,
-} from './screens';
-import type { Receipt, AttackType } from './types';
+import { DeniedEnvironment } from './screens';
+
+type AppMode = 'denied-environment' | 'complete';
 
 function App() {
-  const { currentScreen, goToNext, restart } = useScreenNavigation();
+  const [mode, setMode] = useState<AppMode>('denied-environment');
 
-  // State shared between screens
-  const [receipts, setReceipts] = useState<Receipt[]>([]);
-  const [selectedAttack, setSelectedAttack] = useState<AttackType>('REMOVE_APPROVAL');
-
-  // Handle receipt generation from live mission
-  const handleReceiptsGenerated = useCallback((newReceipts: Receipt[]) => {
-    setReceipts(newReceipts);
+  const handleComplete = useCallback(() => {
+    setMode('complete');
   }, []);
 
-  // Handle attack selection from tampering console
-  const handleAttackSelected = useCallback((attack: AttackType) => {
-    setSelectedAttack(attack);
-    goToNext();
-  }, [goToNext]);
-
-  // Handle restart
   const handleRestart = useCallback(() => {
-    setReceipts([]);
-    setSelectedAttack('REMOVE_APPROVAL');
-    restart();
-  }, [restart]);
+    setMode('denied-environment');
+  }, []);
 
-  // Render current screen
-  const renderScreen = () => {
-    switch (currentScreen) {
-      case 'mission-context':
-        return <MissionContext onAdvance={goToNext} />;
+  if (mode === 'complete') {
+    return (
+      <div className="min-h-screen bg-[#0a0f1a] flex flex-col items-center justify-center p-8">
+        <div className="text-center max-w-2xl">
+          {/* Success badge */}
+          <div
+            className="inline-block px-6 py-2 mb-8 font-mono text-sm tracking-widest"
+            style={{
+              backgroundColor: 'rgba(0, 170, 102, 0.15)',
+              border: '2px solid #00aa66',
+              color: '#00aa66',
+            }}
+          >
+            MISSION COMPLETE
+          </div>
 
-      case 'live-mission':
-        return (
-          <LiveMission
-            onAdvance={goToNext}
-            onReceiptsGenerated={handleReceiptsGenerated}
-          />
-        );
+          {/* Main message */}
+          <h1 className="text-4xl font-bold text-white mb-4 font-mono">
+            Chain of Custody: Unbroken
+          </h1>
 
-      case 'decision-explorer':
-        return (
-          <DecisionExplorer
-            receipts={receipts}
-            onAdvance={goToNext}
-          />
-        );
+          <p className="text-xl text-gray-400 mb-8 font-mono">
+            142 decisions captured. Zero gaps. $15M liability avoided.
+          </p>
 
-      case 'tampering-console':
-        return (
-          <TamperingConsole
-            receipts={receipts}
-            onAdvance={handleAttackSelected}
-          />
-        );
+          {/* The quote */}
+          <div className="relative p-6 my-8 text-left" style={{ backgroundColor: 'rgba(13, 20, 36, 0.8)' }}>
+            <div className="absolute top-2 left-4 text-4xl text-gray-700 font-serif">"</div>
+            <p className="text-gray-300 italic pl-6 pr-4 text-sm leading-relaxed">
+              When your drone goes dark over a school, our system proves—cryptographically—that
+              it followed the rules you programmed in the boardroom. That proof is admissible
+              in court, acceptable to insurers, and compliant with DOD 3000.09.
+            </p>
+            <p className="text-gray-300 italic pl-6 pr-4 text-sm leading-relaxed mt-4">
+              Your current black box? It just says "signal lost."
+            </p>
+            <p className="text-[#00aa66] font-bold pl-6 mt-4 text-sm">
+              Which one do you want when Congress subpoenas your logs?
+            </p>
+          </div>
 
-      case 'rejection':
-        return (
-          <Rejection
-            receipts={receipts}
-            attackType={selectedAttack}
-            onAdvance={goToNext}
-          />
-        );
+          {/* Stats row */}
+          <div className="grid grid-cols-3 gap-6 my-8">
+            <div className="p-4" style={{ backgroundColor: 'rgba(13, 20, 36, 0.8)', border: '1px solid #374151' }}>
+              <div className="text-2xl font-mono font-bold text-[#00d4ff]">30-50%</div>
+              <div className="text-xs text-gray-500 font-mono mt-1">PREMIUM REDUCTION</div>
+            </div>
+            <div className="p-4" style={{ backgroundColor: 'rgba(13, 20, 36, 0.8)', border: '1px solid #374151' }}>
+              <div className="text-2xl font-mono font-bold text-[#00d4ff]">$15M</div>
+              <div className="text-xs text-gray-500 font-mono mt-1">CLAIM AVOIDANCE</div>
+            </div>
+            <div className="p-4" style={{ backgroundColor: 'rgba(13, 20, 36, 0.8)', border: '1px solid #374151' }}>
+              <div className="text-2xl font-mono font-bold text-[#00d4ff]">6-18mo</div>
+              <div className="text-xs text-gray-500 font-mono mt-1">FASTER APPROVAL</div>
+            </div>
+          </div>
 
-      case 'comparison':
-        return <Comparison onAdvance={goToNext} />;
+          {/* Restart button */}
+          <button
+            onClick={handleRestart}
+            className="px-8 py-3 font-mono text-sm tracking-wider transition-all duration-300 hover:scale-105"
+            style={{
+              backgroundColor: 'transparent',
+              border: '2px solid #00d4ff',
+              color: '#00d4ff',
+            }}
+          >
+            REPLAY DEMONSTRATION
+          </button>
 
-      case 'close':
-        return <Close onRestart={handleRestart} />;
+          {/* Footer tagline */}
+          <p className="mt-12 text-gray-600 font-mono text-xs tracking-widest">
+            LOST SIGNAL ≠ LOST CONTROL. LOST SIGNAL = PRESERVED PROOF.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-      default:
-        return <MissionContext onAdvance={goToNext} />;
-    }
-  };
-
-  return (
-    <div className="bg-[#0a0a0a] min-h-screen">
-      {renderScreen()}
-    </div>
-  );
+  return <DeniedEnvironment onComplete={handleComplete} />;
 }
 
 export default App;
