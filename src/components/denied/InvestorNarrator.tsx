@@ -113,14 +113,15 @@ export function InvestorNarrator({
 
   const calloutConfig = CALLOUTS[activeCallout];
 
-  // Position styles based on callout type
+  // COCKPIT v1.0: Position styles - callouts positioned relative to VIEWPORT CENTER
+  // "The callout is positioned relative to VIEWPORT CENTER, not attached to the drone"
   const getPositionStyle = (): React.CSSProperties => {
     switch (calloutConfig.position) {
       case 'top-left':
         return {
           position: 'fixed',
           top: '80px',
-          left: '24px',
+          left: '320px',  // COCKPIT: Offset to right of left-edge terminal (300px width)
           transform: 'none',
         };
       case 'top-center':
@@ -131,9 +132,11 @@ export function InvestorNarrator({
           transform: 'translateX(-50%)',
         };
       case 'bottom-center':
+        // COCKPIT v1.0: Center, under drone (viewport 55-65% from top)
+        // Drone is at 40% from top, so callout goes at ~55% (below drone)
         return {
           position: 'fixed',
-          bottom: '220px', // Above terminal (which is at bottom 5% + 300px height)
+          top: '55%',  // COCKPIT: Below drone center (drone at 40%), stays put in viewport
           left: '50%',
           transform: 'translateX(-50%)',
         };

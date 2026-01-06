@@ -27,13 +27,8 @@ interface TacticalGridProps {
   unknownObject?: UnknownObject | null;
   currentWaypoint?: number;
   confidence?: number;
-  // Callout system
-  activeCallout?: {
-    type: 'GPS_DRIFT' | 'CRAG_FALLBACK' | 'RACI_HANDOFF' | 'CONFIDENCE_DROP';
-    message: string;
-    severity: 'warning' | 'critical';
-  } | null;
-  onCalloutDismiss?: () => void;
+  // COCKPIT v1.0: System callouts REMOVED - only investor narrator remains
+  activeCallout?: unknown;  // Kept for backward compatibility, not used
 }
 
 // Simulated telemetry data
@@ -70,12 +65,10 @@ export function TacticalGrid({
   unknownObject,
   currentWaypoint = 0,
   confidence = 0.99,
-  activeCallout,
 }: TacticalGridProps) {
   const [geofenceFlash, setGeofenceFlash] = useState(false);
   const lastPhaseRef = useRef(phase);
-  const [calloutVisible, setCalloutVisible] = useState(false);
-  const calloutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // COCKPIT v1.0: Callout state removed - only investor narrator callouts remain
 
   // Dynamic viewport dimensions - fills entire screen
   const [viewport, setViewport] = useState({
@@ -179,25 +172,7 @@ export function TacticalGrid({
     lastPhaseRef.current = phase;
   }, [phase]);
 
-  // Show callout when active, auto-dismiss after 4 seconds
-  useEffect(() => {
-    if (activeCallout) {
-      setCalloutVisible(true);
-      if (calloutTimerRef.current) {
-        clearTimeout(calloutTimerRef.current);
-      }
-      calloutTimerRef.current = setTimeout(() => {
-        setCalloutVisible(false);
-      }, 4000);
-    } else {
-      setCalloutVisible(false);
-    }
-    return () => {
-      if (calloutTimerRef.current) {
-        clearTimeout(calloutTimerRef.current);
-      }
-    };
-  }, [activeCallout]);
+  // COCKPIT v1.0: System callout timer removed - only investor narrator callouts remain
 
   // Generate path string for completed trail (in world coords, will be transformed)
   // Recalculates when drone moves (worldOffset changes) or waypoints are visited
@@ -351,35 +326,36 @@ export function TacticalGrid({
             />
           </g>
 
-          {/* Geofence / GPS Bounds - moves with world, scaled by ZOOM */}
-          <g>
-            <rect
-              x={geofenceScreen.x}
-              y={geofenceScreen.y}
-              width={geofenceScreen.width}
-              height={geofenceScreen.height}
-              fill="none"
-              stroke={isUncertaintyPhase && geofenceFlash ? COLORS.alertRed : COLORS.textTimestamp}
-              strokeWidth={isUncertaintyPhase ? 3 : 1.5}
-              strokeDasharray="12 6"
-              opacity={isUncertaintyPhase ? 0.8 : 0.25}
-              style={{
-                transition: 'stroke 0.15s, opacity 0.3s',
-              }}
-            />
-            <text
-              x={geofenceScreen.x + 8}
-              y={geofenceScreen.y - 8}
-              style={{
-                fontSize: '11px',
-                fontFamily: 'JetBrains Mono, monospace',
-                fill: isUncertaintyPhase && geofenceFlash ? COLORS.alertRed : COLORS.textTimestamp,
-                opacity: isUncertaintyPhase ? 0.9 : 0.4,
-              }}
-            >
-              GPS BOUNDS
-            </text>
-          </g>
+          {/* COCKPIT v1.0: GPS Bounds - ONLY visible during uncertainty phase */}
+          {/* "Kill the Premature GPS_BOUNDS" - hide until drone approaches */}
+          {isUncertaintyPhase && (
+            <g style={{ opacity: geofenceFlash ? 0.8 : 0.6, transition: 'opacity 0.3s' }}>
+              <rect
+                x={geofenceScreen.x}
+                y={geofenceScreen.y}
+                width={geofenceScreen.width}
+                height={geofenceScreen.height}
+                fill="none"
+                stroke={geofenceFlash ? COLORS.alertRed : '#d97706'}
+                strokeWidth={3}
+                strokeDasharray="12 6"
+                style={{
+                  transition: 'stroke 0.15s',
+                }}
+              />
+              <text
+                x={geofenceScreen.x + 8}
+                y={geofenceScreen.y - 8}
+                style={{
+                  fontSize: '11px',
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fill: geofenceFlash ? COLORS.alertRed : '#d97706',
+                }}
+              >
+                GPS BOUNDS
+              </text>
+            </g>
+          )}
 
           {/* Future path - HIDDEN for "Quiet Sky" doctrine */}
           {/* CLEAN SKY FIX: Hide waypoint-to-waypoint lines ahead of drone to reduce visual clutter */}
@@ -422,19 +398,18 @@ export function TacticalGrid({
             />
           )}
 
-          {/* Waypoints - move with world, scaled for zoom */}
-          {/* CLEAN SKY: Future waypoints are subtle dots, no labels (except DEST) */}
+          {/* COCKPIT v1.0: Waypoints - move with world, scaled for zoom */}
+          {/* "Kill the DEST Label Pre-Reveal" - labels only shown AFTER drone passes */}
           {FLIGHT_PATH.map((wp, i) => {
             const isCurrent = i === currentWaypoint;
             const isCompleted = i < visitedPathIndex;
             const isFuture = !isCurrent && !isCompleted;
-            const isDestination = wp.label === 'DEST';
             const screen = worldToScreen(wp.x, wp.y);
 
-            // CLEAN SKY: Future waypoints are nearly invisible small dots
-            // Only DEST label is shown for destination context
-            const futureRadius = isDestination ? 6 : 4;
-            const futureOpacity = isDestination ? 0.5 : 0.25;
+            // COCKPIT: Future waypoints are nearly invisible small dots (6-8px)
+            // Gray for future, white for passed
+            const futureRadius = 6;
+            const futureOpacity = 0.25;
 
             return (
               <g key={i}>
@@ -454,8 +429,9 @@ export function TacticalGrid({
                   opacity={isFuture ? futureOpacity : 1}
                   className={isCurrent ? 'animate-subtlePulse' : ''}
                 />
-                {/* CLEAN SKY: Only show labels for current, completed, and DEST waypoints */}
-                {(!isFuture || isDestination) && (
+                {/* COCKPIT v1.0: Labels only for current and completed waypoints */}
+                {/* "Hide DEST label until drone reaches final waypoint OR mission complete" */}
+                {!isFuture && (
                   <text
                     x={screen.x}
                     y={screen.y - 18}
@@ -466,10 +442,7 @@ export function TacticalGrid({
                       fontFamily: 'JetBrains Mono, monospace',
                       fill: isCurrent
                         ? COLORS.textSecondary
-                        : isCompleted
-                          ? COLORS.textTimestamp
-                          : COLORS.waypointFuture,
-                      opacity: isFuture && isDestination ? 0.5 : 1,
+                        : COLORS.textTimestamp,
                     }}
                   >
                     {wp.label}
@@ -598,85 +571,9 @@ export function TacticalGrid({
         </div>
       </div>
 
-      {/* LEADER LINE & CALLOUT - ANCHORED at fixed position (no motion sickness) */}
-      {/* DIRECTIVE 3: Callout is FIXED to viewport, only connector line points to drone */}
-      {calloutVisible && activeCallout && (
-        <>
-          {/* SVG connector line from drone to callout (updates with drone position) */}
-          <svg
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100vw',
-              height: '100vh',
-              pointerEvents: 'none',
-              zIndex: 50,
-            }}
-          >
-            {/* Leader line from drone (center) to callout box (bottom-center) */}
-            <line
-              x1="50%"
-              y1="40%"
-              x2="50%"
-              y2="calc(100% - 380px)"
-              stroke={activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24'}
-              strokeWidth="2"
-              strokeDasharray="8 4"
-              opacity="0.6"
-              style={{
-                filter: `drop-shadow(0 0 4px ${activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24'})`,
-              }}
-            />
-          </svg>
-
-          {/* FIXED callout box - stays in place while drone moves */}
-          <div
-            style={{
-              position: 'fixed',
-              bottom: '340px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              zIndex: 51,
-              pointerEvents: 'none',
-            }}
-          >
-            <div
-              style={{
-                background: 'rgba(9, 9, 11, 0.95)',
-                border: `1px solid ${activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24'}`,
-                borderLeft: `4px solid ${activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24'}`,
-                borderRadius: '4px',
-                padding: '12px 16px',
-                minWidth: '220px',
-                boxShadow: `0 0 20px ${activeCallout.severity === 'critical' ? 'rgba(248, 113, 113, 0.3)' : 'rgba(251, 191, 36, 0.3)'}`,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: '14px',
-                  fontFamily: 'JetBrains Mono, monospace',
-                  fontWeight: 700,
-                  color: activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24',
-                  marginBottom: '4px',
-                }}
-              >
-                ⚠ {activeCallout.type.replace('_', ' ')}
-              </div>
-              <div
-                style={{
-                  fontSize: '12px',
-                  fontFamily: 'JetBrains Mono, monospace',
-                  fontWeight: 500,
-                  color: '#CBD5E1',
-                }}
-              >
-                {activeCallout.message}
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+      {/* COCKPIT v1.0: System callouts REMOVED - "Kill the System Jargon" */}
+      {/* Yellow tooltips (GPS_DRIFT, CRAG_FALLBACK, RACI_HANDOFF) eliminated */}
+      {/* Only InvestorNarrator callouts remain for CFO-grade presentation */}
 
       {/* Telemetry Overlay - Top left corner - DEAL-KILLER #2 TEXT SIZES */}
       <div
