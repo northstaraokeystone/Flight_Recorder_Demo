@@ -115,7 +115,7 @@ export function ComplianceBar({ compliance, isOffline, isVerified }: ComplianceB
         <div
           className="absolute inset-0 pointer-events-none animate-pulse"
           style={{
-            boxShadow: `inset 0 0 20px ${COLORS.accentGlow}`,
+            boxShadow: `inset 0 0 20px rgba(100, 116, 139, 0.2)`,
           }}
         />
       )}

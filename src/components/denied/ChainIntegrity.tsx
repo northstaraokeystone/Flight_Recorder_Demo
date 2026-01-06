@@ -129,7 +129,7 @@ export function ChainIntegrity({ blocks, syncedCount, phase }: ChainIntegrityPro
           <div
             className="absolute inset-y-0 w-8"
             style={{
-              background: `linear-gradient(90deg, transparent, ${COLORS.accentGlow}, transparent)`,
+              background: `linear-gradient(90deg, transparent, rgba(100, 116, 139, 0.3), transparent)`,
               animation: 'slideRight 0.3s linear infinite',
             }}
           />
