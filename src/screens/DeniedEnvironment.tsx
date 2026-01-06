@@ -23,7 +23,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { TacticalGrid, Affidavit, TrustGap, createLedgerEntry } from '../components/denied';
+import { TacticalGrid, Affidavit, createLedgerEntry } from '../components/denied';
 import { createGovernanceLogEntry } from '../components/denied/CryptographicLedger';
 import type { GovernanceState } from '../components/denied/GovernancePanel';
 import type { ScenarioPhase, GovernanceLogEntry, DronePosition, UnknownObject } from '../constants/scenario';
@@ -105,7 +105,6 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
 
   // End state
   const [showAffidavit, setShowAffidavit] = useState(false);
-  const [showTrustGap, setShowTrustGap] = useState(false);
 
   // Timing refs
   const phaseStartRef = useRef(Date.now());
@@ -381,10 +380,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         setIsRunning(false);
         break;
 
-      case 'TRUST_GAP':
-        setShowAffidavit(false);
-        setShowTrustGap(true);
-        break;
+      // TRUST_GAP REMOVED - Demo ends on Affidavit (Deal-Killer #4)
     }
   }, [addLogEntry, addGovernanceBadge]);
 
@@ -499,7 +495,6 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
     setMapOpacity(0);
     setShowMerkleRoot(false);
     setShowAffidavit(false);
-    setShowTrustGap(false);
 
     // Restart boot sequence
     const bootSteps = [
@@ -614,48 +609,49 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         />
       </div>
 
-      {/* ===== BOTTOM CENTER: Event Log Overlay ===== */}
+      {/* ===== BOTTOM CENTER: Event Log Overlay - DEAL-KILLER #2 TEXT SIZES ===== */}
       {demoPhase === 'RUNNING' && (
         <div
           className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-30"
           style={{
             width: '100%',
-            maxWidth: '600px',
+            maxWidth: '700px',
             padding: '0 16px',
           }}
         >
           <div
-            className="rounded-t-lg overflow-hidden"
+            className="rounded-t-xl overflow-hidden"
             style={{
               backgroundColor: 'rgba(9, 9, 11, 0.85)',
               backdropFilter: 'blur(8px)',
-              border: `1px solid ${COLORS.borderBracket}`,
+              border: `1px solid rgba(255, 255, 255, 0.1)`,
               borderBottom: 'none',
-              maxHeight: '200px',
+              maxHeight: '180px',
             }}
           >
             {/* Header */}
             <div
-              className="px-4 py-2 flex justify-between items-center"
+              className="px-5 py-3 flex justify-between items-center"
               style={{
-                borderBottom: `1px solid ${COLORS.borderBracket}`,
+                borderBottom: `1px solid rgba(255, 255, 255, 0.1)`,
                 backgroundColor: 'rgba(9, 9, 11, 0.95)',
               }}
             >
               <span
                 style={{
-                  fontSize: '10px',
-                  fontWeight: 500,
+                  fontSize: '12px',
+                  fontWeight: 600,
                   letterSpacing: '0.1em',
-                  color: COLORS.textMuted,
+                  color: '#CBD5E1',
                 }}
               >
                 EVENT STREAM
               </span>
               <span
                 style={{
-                  fontSize: '9px',
-                  color: COLORS.textTimestamp,
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  color: '#94a3b8',
                   fontFamily: 'JetBrains Mono, monospace',
                 }}
               >
@@ -663,17 +659,18 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
               </span>
             </div>
 
-            {/* Log entries - scroll upward (newest at bottom, visually on top) */}
+            {/* Log entries - READABLE FROM 10 FEET */}
             <div
-              className="overflow-y-auto px-4 py-2"
-              style={{ maxHeight: '160px' }}
+              className="overflow-hidden px-4 py-2"
+              style={{ maxHeight: '140px' }}
             >
               {governanceLog.length === 0 ? (
                 <div
                   className="text-center py-4"
                   style={{
-                    fontSize: '10px',
-                    color: COLORS.textTimestamp,
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: '#94a3b8',
                     fontFamily: 'JetBrains Mono, monospace',
                   }}
                 >
@@ -681,7 +678,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {[...governanceLog].reverse().slice(0, 6).map((entry, idx) => {
+                  {[...governanceLog].reverse().slice(0, 5).map((entry, idx) => {
                     const isNewest = idx === 0;
                     const isCritical = entry.severity === 'CRITICAL';
                     const isWarning = entry.severity === 'WARN';
@@ -690,45 +687,47 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
                     return (
                       <div
                         key={entry.blockId}
-                        className={`flex items-start gap-3 py-2 px-3 rounded ${isNewest ? 'animate-fadeIn' : ''}`}
+                        className={`flex items-center gap-4 py-2 px-4 rounded ${isNewest ? 'animate-fadeIn' : ''}`}
                         style={{
-                          backgroundColor: isCritical ? 'rgba(239, 68, 68, 0.1)' :
-                                          isWarning ? 'rgba(217, 119, 6, 0.08)' :
-                                          isSuccess ? 'rgba(100, 116, 139, 0.08)' :
+                          backgroundColor: isCritical ? 'rgba(239, 68, 68, 0.15)' :
+                                          isWarning ? 'rgba(217, 119, 6, 0.12)' :
+                                          isSuccess ? 'rgba(100, 116, 139, 0.1)' :
                                           'transparent',
-                          borderLeft: `3px solid ${
-                            isCritical ? COLORS.alertRed :
-                            isWarning ? '#d97706' :
-                            isSuccess ? COLORS.textMuted :
+                          borderLeft: `4px solid ${
+                            isCritical ? '#FCA5A5' :
+                            isWarning ? '#fbbf24' :
+                            isSuccess ? '#94a3b8' :
                             'transparent'
                           }`,
                           opacity: idx > 3 ? 0.6 : 1,
-                          lineHeight: '1.6',
+                          lineHeight: '1.8',
                         }}
                       >
                         {/* Block ID */}
                         <span
                           style={{
-                            fontSize: '9px',
-                            color: COLORS.textTimestamp,
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            color: '#94a3b8',
                             fontFamily: 'JetBrains Mono, monospace',
-                            minWidth: '45px',
+                            minWidth: '50px',
                           }}
                         >
                           [{String(entry.blockId).padStart(2, '0')}]
                         </span>
 
-                        {/* Event type */}
+                        {/* Event type - 14px normal, 16px bold for critical */}
                         <span
                           style={{
-                            fontSize: '10px',
-                            color: isCritical ? COLORS.alertRed :
-                                   isWarning ? '#d97706' :
-                                   isSuccess ? COLORS.textSecondary :
-                                   COLORS.textMuted,
+                            fontSize: isCritical ? '16px' : '14px',
+                            fontWeight: isCritical ? 700 : 600,
+                            color: isCritical ? '#FCA5A5' :
+                                   isWarning ? '#fbbf24' :
+                                   isSuccess ? '#F1F5F9' :
+                                   '#CBD5E1',
                             fontFamily: 'JetBrains Mono, monospace',
-                            fontWeight: 500,
                             flex: 1,
+                            letterSpacing: '0.02em',
                           }}
                         >
                           {entry.eventType}
@@ -737,8 +736,9 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
                         {/* Timestamp */}
                         <span
                           style={{
-                            fontSize: '9px',
-                            color: COLORS.textTimestamp,
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            color: '#64748b',
                             fontFamily: 'JetBrains Mono, monospace',
                           }}
                         >
@@ -754,8 +754,8 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         </div>
       )}
 
-      {/* ===== TOP RIGHT: Governance Badges (On-Change Only) ===== */}
-      <div className="absolute top-4 right-4 z-40 space-y-2">
+      {/* ===== TOP RIGHT: Governance Badges - DEAL-KILLER #2 TEXT SIZES ===== */}
+      <div className="absolute top-4 right-4 z-40 space-y-3">
         {governanceBadges.map(badge => (
           <div
             key={badge.id}
@@ -764,39 +764,40 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
               backgroundColor: 'rgba(9, 9, 11, 0.95)',
               backdropFilter: 'blur(4px)',
               border: `1px solid ${
-                badge.severity === 'critical' ? COLORS.alertRed :
-                badge.severity === 'warning' ? '#d97706' :
-                COLORS.borderBracket
+                badge.severity === 'critical' ? '#FCA5A5' :
+                badge.severity === 'warning' ? '#fbbf24' :
+                'rgba(255,255,255,0.1)'
               }`,
               borderLeft: `4px solid ${
-                badge.severity === 'critical' ? COLORS.alertRed :
-                badge.severity === 'warning' ? '#d97706' :
-                COLORS.textMuted
+                badge.severity === 'critical' ? '#FCA5A5' :
+                badge.severity === 'warning' ? '#fbbf24' :
+                '#94a3b8'
               }`,
               borderRadius: '4px',
-              padding: '12px 16px',
-              maxWidth: '220px',
+              padding: '16px 20px',
+              maxWidth: '280px',
             }}
           >
             <div
               style={{
-                fontSize: '10px',
-                fontWeight: 600,
-                color: badge.severity === 'critical' ? COLORS.alertRed :
-                       badge.severity === 'warning' ? '#d97706' :
-                       COLORS.textSecondary,
+                fontSize: badge.severity === 'critical' ? '16px' : '14px',
+                fontWeight: 700,
+                color: badge.severity === 'critical' ? '#FCA5A5' :
+                       badge.severity === 'warning' ? '#fbbf24' :
+                       '#F1F5F9',
                 letterSpacing: '0.05em',
-                marginBottom: '4px',
+                marginBottom: '6px',
               }}
             >
               {badge.title}
             </div>
             <div
               style={{
-                fontSize: '11px',
-                color: COLORS.textMuted,
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#CBD5E1',
                 fontFamily: 'JetBrains Mono, monospace',
-                lineHeight: '1.5',
+                lineHeight: '1.6',
               }}
             >
               {badge.detail}
@@ -897,7 +898,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         </div>
       )}
 
-      {/* ===== Affidavit Overlay ===== */}
+      {/* ===== Affidavit Overlay - THE MIC DROP. NOTHING AFTER. ===== */}
       <Affidavit
         isVisible={showAffidavit}
         missionId={AFFIDAVIT_DATA.missionId}
@@ -918,14 +919,13 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         regulatoryTrigger={null}
         blocks={blockCountRef.current}
         receipts={governanceLog.length}
-        onDismiss={() => transitionToPhase('TRUST_GAP')}
-      />
-
-      {/* ===== Trust Gap Comparison ===== */}
-      <TrustGap
-        isVisible={showTrustGap}
         onRestart={handleRestart}
       />
+
+      {/* TrustGap REMOVED from demo flow per Deal-Killer #4
+       * The comparison slide is for pitch deck, not the software demo.
+       * Demo ends on Affidavit. That is the mic drop.
+       */}
     </div>
   );
 }

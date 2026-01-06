@@ -476,67 +476,68 @@ export function TacticalGrid({
           UAV_01
         </text>
 
-        {/* LEADER LINE & CALLOUT - When critical events fire */}
+        {/* LEADER LINE & CALLOUT - DEAL-KILLER #2 READABLE TEXT */}
         {calloutVisible && activeCallout && (
           <g className="callout-layer animate-fadeIn">
             {/* Leader line from drone to callout */}
             <line
               x1={DRONE_SCREEN_X}
               y1={DRONE_SCREEN_Y}
-              x2={DRONE_SCREEN_X - 100}
-              y2={DRONE_SCREEN_Y - 70}
-              stroke={activeCallout.severity === 'critical' ? COLORS.alertRed : '#d97706'}
-              strokeWidth="2"
-              strokeDasharray="4 2"
+              x2={DRONE_SCREEN_X - 120}
+              y2={DRONE_SCREEN_Y - 80}
+              stroke={activeCallout.severity === 'critical' ? '#FCA5A5' : '#fbbf24'}
+              strokeWidth="3"
+              strokeDasharray="6 3"
               style={{
-                filter: `drop-shadow(0 0 4px ${activeCallout.severity === 'critical' ? COLORS.alertRed : '#d97706'})`,
+                filter: `drop-shadow(0 0 6px ${activeCallout.severity === 'critical' ? '#FCA5A5' : '#fbbf24'})`,
               }}
             />
-            {/* Callout box */}
-            <g transform={`translate(${DRONE_SCREEN_X - 100}, ${DRONE_SCREEN_Y - 70})`}>
+            {/* Callout box - LARGER for readability */}
+            <g transform={`translate(${DRONE_SCREEN_X - 120}, ${DRONE_SCREEN_Y - 80})`}>
               <rect
-                x="-85"
-                y="-35"
-                width="170"
-                height="45"
+                x="-100"
+                y="-40"
+                width="200"
+                height="55"
                 fill="rgba(9, 9, 11, 0.95)"
-                stroke={activeCallout.severity === 'critical' ? COLORS.alertRed : '#d97706'}
+                stroke={activeCallout.severity === 'critical' ? '#FCA5A5' : '#fbbf24'}
                 strokeWidth="1"
                 rx="4"
               />
               {/* Left accent border */}
               <rect
-                x="-85"
-                y="-35"
+                x="-100"
+                y="-40"
                 width="4"
-                height="45"
-                fill={activeCallout.severity === 'critical' ? COLORS.alertRed : '#d97706'}
+                height="55"
+                fill={activeCallout.severity === 'critical' ? '#FCA5A5' : '#fbbf24'}
                 rx="2"
               />
-              {/* Callout text */}
+              {/* Callout text - 14px min, readable from 10 feet */}
               <text
-                x="-75"
-                y="-18"
+                x="-90"
+                y="-20"
                 style={{
-                  fontSize: '9px',
+                  fontSize: '14px',
                   fontFamily: 'JetBrains Mono, monospace',
-                  fill: activeCallout.severity === 'critical' ? COLORS.alertRed : '#d97706',
-                  fontWeight: 600,
+                  fill: activeCallout.severity === 'critical' ? '#FCA5A5' : '#fbbf24',
+                  fontWeight: 700,
                 }}
               >
-                {activeCallout.type.replace('_', ' ')}
+                ⚠ {activeCallout.type.replace('_', ' ')}
               </text>
               <text
-                x="-75"
-                y="-2"
+                x="-90"
+                y="0"
                 style={{
-                  fontSize: '8px',
+                  fontSize: '12px',
                   fontFamily: 'JetBrains Mono, monospace',
-                  fill: COLORS.textMuted,
+                  fill: '#CBD5E1',
+                  fontWeight: 500,
                 }}
               >
-                {activeCallout.message.length > 25
-                  ? activeCallout.message.slice(0, 25) + '...'
+                {activeCallout.message.length > 28
+                  ? activeCallout.message.slice(0, 28) + '...'
                   : activeCallout.message}
               </text>
             </g>
@@ -544,51 +545,52 @@ export function TacticalGrid({
         )}
       </svg>
 
-      {/* Telemetry Overlay - Top left corner */}
+      {/* Telemetry Overlay - Top left corner - DEAL-KILLER #2 TEXT SIZES */}
       <div
-        className="absolute top-4 left-4 px-3 py-2"
+        className="absolute top-4 left-4 px-4 py-3"
         style={{
           backgroundColor: 'rgba(9, 9, 11, 0.85)',
           backdropFilter: 'blur(4px)',
           borderRadius: '4px',
-          border: `1px solid ${COLORS.borderBracket}`,
+          border: '1px solid rgba(255,255,255,0.1)',
         }}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-5">
           {/* Altitude */}
-          <div className="flex items-center gap-1.5">
-            <span style={{ fontSize: '9px', color: COLORS.textTimestamp }}>ALT</span>
-            <span style={{ fontSize: '11px', fontFamily: 'JetBrains Mono, monospace', color: COLORS.textSecondary }}>
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: '11px', fontWeight: 500, color: '#64748b' }}>ALT</span>
+            <span style={{ fontSize: '14px', fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', color: '#F1F5F9' }}>
               {telemetry.altitude}m
             </span>
           </div>
 
           {/* Speed */}
-          <div className="flex items-center gap-1.5">
-            <span style={{ fontSize: '9px', color: COLORS.textTimestamp }}>SPD</span>
-            <span style={{ fontSize: '11px', fontFamily: 'JetBrains Mono, monospace', color: COLORS.textSecondary }}>
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: '11px', fontWeight: 500, color: '#64748b' }}>SPD</span>
+            <span style={{ fontSize: '14px', fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', color: '#F1F5F9' }}>
               {telemetry.speed}m/s
             </span>
           </div>
 
           {/* Heading */}
-          <div className="flex items-center gap-1.5">
-            <span style={{ fontSize: '9px', color: COLORS.textTimestamp }}>HDG</span>
-            <span style={{ fontSize: '11px', fontFamily: 'JetBrains Mono, monospace', color: COLORS.textSecondary }}>
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: '11px', fontWeight: 500, color: '#64748b' }}>HDG</span>
+            <span style={{ fontSize: '14px', fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', color: '#F1F5F9' }}>
               {String(telemetry.heading).padStart(3, '0')}°
             </span>
           </div>
 
           {/* GPS Status */}
-          <div className="flex items-center gap-1.5">
-            <span style={{ fontSize: '9px', color: COLORS.textTimestamp }}>GPS</span>
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: '11px', fontWeight: 500, color: '#64748b' }}>GPS</span>
             <span
               style={{
-                fontSize: '11px',
+                fontSize: '14px',
+                fontWeight: 600,
                 fontFamily: 'JetBrains Mono, monospace',
-                color: telemetry.gpsStatus === 'DRIFT' ? COLORS.alertRed :
-                       telemetry.gpsStatus === 'ACQUIRING' ? '#d97706' :
-                       COLORS.textSecondary,
+                color: telemetry.gpsStatus === 'DRIFT' ? '#FCA5A5' :
+                       telemetry.gpsStatus === 'ACQUIRING' ? '#fbbf24' :
+                       '#F1F5F9',
               }}
               className={telemetry.gpsStatus === 'DRIFT' ? 'animate-pulse' : ''}
             >
@@ -598,17 +600,18 @@ export function TacticalGrid({
         </div>
       </div>
 
-      {/* Low confidence indicator - Top right */}
+      {/* Low confidence indicator - Top right - DEAL-KILLER #2 */}
       {isLowConfidence && (
         <div
-          className="absolute top-4 right-4 px-3 py-2"
+          className="absolute top-4 right-4 px-4 py-3"
           style={{
-            backgroundColor: 'rgba(239, 68, 68, 0.15)',
-            border: `1px solid ${COLORS.alertRed}`,
+            backgroundColor: 'rgba(239, 68, 68, 0.2)',
+            border: '1px solid #FCA5A5',
             borderRadius: '4px',
-            fontSize: '10px',
+            fontSize: '14px',
+            fontWeight: 700,
             fontFamily: 'JetBrains Mono, monospace',
-            color: COLORS.alertRed,
+            color: '#FCA5A5',
           }}
         >
           CONFIDENCE: {(confidence * 100).toFixed(0)}%

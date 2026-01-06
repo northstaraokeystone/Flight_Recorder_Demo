@@ -1,14 +1,19 @@
 /**
  * Color System - Stealth Bomber Aesthetic
- * v2.2 DIAMOND: Military radar display, not video game
- * Pure blacks, dim slates, bone white text
+ * v3.1 DEAL-KILLER REMEDIATION: HIGH CONTRAST for projector/boardroom
+ *
+ * KEY CHANGES:
+ * - Primary text: #F1F5F9 (Slate-100, brighter)
+ * - Secondary text: #CBD5E1 (Slate-300)
+ * - Critical text: #FCA5A5 (Red-300, brighter than Red-500)
+ * - Warning text: #fbbf24 (Amber-400, brighter)
  */
 
 export const COLORS = {
   // Backgrounds - Pure black stealth
   bgPrimary: '#09090b',        // zinc-950 - Pure black
   bgCard: '#0a0a0a',           // Near-black
-  bgElevated: '#0d0d0d',       // Slightly elevated
+  bgElevated: '#0f0f0f',       // Slightly elevated (for Affidavit)
   bgGrid: 'rgba(30, 41, 59, 0.2)', // Slate-800 barely visible
 
   // Flight Path - Radar style (NOT neon)
@@ -18,55 +23,55 @@ export const COLORS = {
   waypointCompleted: '#475569',   // Slate-600: Already passed
   waypointFuture: '#1e293b',      // Slate-800: Not yet reached
 
-  // Text - Bone white, not green
-  textPrimary: '#F8FAFC',      // Slate-50 - Bone white
-  textSecondary: '#E2E8F0',    // Slate-200
+  // Text - HIGH CONTRAST for projector readability
+  textPrimary: '#F1F5F9',      // Slate-100 - BRIGHTER than before
+  textSecondary: '#CBD5E1',    // Slate-300 - BRIGHTER
   textMuted: '#94a3b8',        // Slate-400
   textDim: '#64748b',          // Slate-500
-  textTimestamp: '#475569',    // Slate-600
-  textHash: '#64748b',         // Slate-500
+  textTimestamp: '#64748b',    // Slate-500 (was 600, now brighter)
+  textHash: '#CBD5E1',         // Slate-300 - BRIGHTER for hash readability
 
   // Status Colors - Muted stealth
   statusOnline: '#64748b',     // Slate-500 - NOT cyan
-  statusDegraded: '#ffaa00',   // Amber - warning
-  statusOffline: '#cc3333',    // Muted red - severed
+  statusDegraded: '#fbbf24',   // Amber-400 - BRIGHTER warning
+  statusOffline: '#FCA5A5',    // Red-300 - BRIGHTER red
   statusSuccess: '#64748b',    // Slate-500 - NOT green
 
-  // Alert - RED ONLY for errors
-  alertRed: '#ef4444',         // Red-500 - ONLY color for alerts
-  alertRedBright: '#ef4444',   // Red-500
-  alertAmber: '#f59e0b',       // Amber-500 (used sparingly)
+  // Alert - HIGH CONTRAST CRITICAL COLORS
+  alertRed: '#FCA5A5',         // Red-300 - BRIGHTER for projector
+  alertRedBright: '#FCA5A5',   // Red-300 - BRIGHTER
+  alertAmber: '#fbbf24',       // Amber-400 - BRIGHTER (was 500)
   alertGreen: '#64748b',       // NO GREEN - use slate
 
   // Governance Panel colors
-  raciAI: '#E2E8F0',           // Slate-200
-  raciHuman: '#F8FAFC',        // Slate-50 (brighter when human)
-  confidenceHigh: '#E2E8F0',   // Slate-200
-  confidenceLow: '#ef4444',    // Red-500 when < 0.70
-  modeAutonomous: '#E2E8F0',   // Slate-200
-  modeSupervised: '#F8FAFC',   // Slate-50
+  raciAI: '#CBD5E1',           // Slate-300 - BRIGHTER
+  raciHuman: '#F1F5F9',        // Slate-100 (brighter when human)
+  confidenceHigh: '#CBD5E1',   // Slate-300 - BRIGHTER
+  confidenceLow: '#FCA5A5',    // Red-300 when < 0.70 - BRIGHTER
+  modeAutonomous: '#CBD5E1',   // Slate-300
+  modeSupervised: '#F1F5F9',   // Slate-100
   cragStandby: '#64748b',      // Slate-500
   cragActive: '#94a3b8',       // Slate-400 (brightens)
-  cragQuerying: '#E2E8F0',     // Slate-200
+  cragQuerying: '#CBD5E1',     // Slate-300
 
   // Zones (tactical map) - Very muted
   zoneGreen: '#334155',        // Slate-700 - Flight corridor
   zoneGrey: '#1e293b',         // Slate-800 - Dead zone
   zoneRed: '#334155',          // Slate-700 - Threat zone border
-  zoneRedBright: '#ef4444',    // Red-500 - Active threat only
+  zoneRedBright: '#FCA5A5',    // Red-300 - Active threat - BRIGHTER
 
   // Borders - Barely visible
   borderDefault: '#1e293b',    // Slate-800
   borderBracket: '#1e293b',    // Slate-800
-  borderDanger: '#ef4444',     // Red-500
+  borderDanger: '#FCA5A5',     // Red-300 - BRIGHTER
   borderSuccess: '#64748b',    // Slate-500
 
-  // Affidavit colors
-  affidavitTitle: '#F8FAFC',   // Slate-50
-  affidavitHeader: '#94a3b8',  // Slate-400
-  affidavitLabel: '#64748b',   // Slate-500
-  affidavitValue: '#E2E8F0',   // Slate-200
-  affidavitHash: '#94a3b8',    // Slate-400
+  // Affidavit colors - HIGH CONTRAST
+  affidavitTitle: '#F1F5F9',   // Slate-100 - BRIGHTER
+  affidavitHeader: '#CBD5E1',  // Slate-300 - BRIGHTER
+  affidavitLabel: '#94a3b8',   // Slate-400 - BRIGHTER than before
+  affidavitValue: '#F1F5F9',   // Slate-100 - BRIGHTER
+  affidavitHash: '#CBD5E1',    // Slate-300 - BRIGHTER for readability
 } as const;
 
 /**
