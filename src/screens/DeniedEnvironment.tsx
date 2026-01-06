@@ -85,8 +85,13 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
   });
 
   // Visual state
+  // Calculate initial rotation toward first waypoint
+  const initialRotation = Math.atan2(
+    FLIGHT_PATH[1].y - FLIGHT_PATH[0].y,
+    FLIGHT_PATH[1].x - FLIGHT_PATH[0].x
+  ) * (180 / Math.PI) + 90;
   const [dronePosition, setDronePosition] = useState<DronePosition>(
-    { x: FLIGHT_PATH[0].x, y: FLIGHT_PATH[0].y, rotation: 45 }
+    { x: FLIGHT_PATH[0].x, y: FLIGHT_PATH[0].y, rotation: initialRotation }
   );
   const [currentWaypoint, setCurrentWaypoint] = useState(0);
   const [visitedPathIndex, setVisitedPathIndex] = useState(0);
@@ -111,6 +116,14 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
   const phaseStartRef = useRef(Date.now());
   const lastTickRef = useRef(Date.now());
   const startTimeRef = useRef(Date.now());
+
+  // Helper function to calculate rotation toward a target waypoint
+  // SVG chevron points UP, so add 90° offset to atan2 result
+  const calculateRotationToWaypoint = (fromIdx: number, toIdx: number): number => {
+    const from = FLIGHT_PATH[fromIdx];
+    const to = FLIGHT_PATH[Math.min(toIdx, FLIGHT_PATH.length - 1)];
+    return Math.atan2(to.y - from.y, to.x - from.x) * (180 / Math.PI) + 90;
+  };
 
   // Generate Merkle root for seal
   const merkleRoot = useMemo(() => {
@@ -207,7 +220,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       case 'WAYPOINT_1':
         setCurrentWaypoint(1);
         setVisitedPathIndex(1);
-        setDronePosition({ x: FLIGHT_PATH[1].x, y: FLIGHT_PATH[1].y, rotation: 30 });
+        setDronePosition({ x: FLIGHT_PATH[1].x, y: FLIGHT_PATH[1].y, rotation: calculateRotationToWaypoint(1, 2) });
         addLogEntry('WAYPOINT_ACHIEVED', 'WPT_1', null, 'SUCCESS');
         addLogEntry('CONFIDENCE_UPDATE', '0.98', null, 'INFO');
         setGovernance(prev => ({ ...prev, confidence: 0.98 }));
@@ -216,7 +229,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       case 'WAYPOINT_2':
         setCurrentWaypoint(2);
         setVisitedPathIndex(2);
-        setDronePosition({ x: FLIGHT_PATH[2].x, y: FLIGHT_PATH[2].y, rotation: 20 });
+        setDronePosition({ x: FLIGHT_PATH[2].x, y: FLIGHT_PATH[2].y, rotation: calculateRotationToWaypoint(2, 3) });
         addLogEntry('WAYPOINT_ACHIEVED', 'WPT_2', null, 'SUCCESS');
         addLogEntry('CONFIDENCE_UPDATE', '0.97', null, 'INFO');
         setGovernance(prev => ({ ...prev, confidence: 0.97 }));
@@ -225,7 +238,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       case 'UNCERTAINTY_DETECTED':
         setCurrentWaypoint(3);
         setVisitedPathIndex(3);
-        setDronePosition({ x: FLIGHT_PATH[3].x, y: FLIGHT_PATH[3].y, rotation: 15 });
+        setDronePosition({ x: FLIGHT_PATH[3].x, y: FLIGHT_PATH[3].y, rotation: calculateRotationToWaypoint(3, 4) });
         setUnknownObject({
           id: UNKNOWN_OBJECT_LOCATION.id,
           label: UNKNOWN_OBJECT_LOCATION.label,
@@ -334,7 +347,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       case 'ROUTE_RESUMED':
         setCurrentWaypoint(5);
         setVisitedPathIndex(5);
-        setDronePosition({ x: FLIGHT_PATH[5].x, y: FLIGHT_PATH[5].y, rotation: 10 });
+        setDronePosition({ x: FLIGHT_PATH[5].x, y: FLIGHT_PATH[5].y, rotation: calculateRotationToWaypoint(5, 6) });
         addLogEntry('ROUTE_RESUMED', 'Original route', null, 'SUCCESS');
         addLogEntry('CONFIDENCE_UPDATE', '0.96', null, 'INFO');
         setGovernance(prev => ({ ...prev, confidence: 0.96 }));
@@ -343,7 +356,8 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       case 'MISSION_COMPLETE':
         setCurrentWaypoint(6);
         setVisitedPathIndex(6);
-        setDronePosition({ x: FLIGHT_PATH[6].x, y: FLIGHT_PATH[6].y, rotation: 0 });
+        // At final destination: keep last calculated rotation (no next waypoint)
+        setDronePosition(prev => ({ x: FLIGHT_PATH[6].x, y: FLIGHT_PATH[6].y, rotation: prev.rotation }));
         addLogEntry('MISSION_COMPLETE', '5/5 waypoints', null, 'SUCCESS');
         addLogEntry('CHAIN_VERIFY', 'INTEGRITY 100%', null, 'SUCCESS');
         setGovernance(prev => ({ ...prev, confidence: 0.98 }));
@@ -439,15 +453,26 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
           break;
       }
 
-      // Smooth drone position interpolation
+      // Smooth drone position interpolation with dynamic rotation
       if (phase !== 'AFFIDAVIT' && phase !== 'TRUST_GAP' && phase !== 'MISSION_COMPLETE') {
         const targetIdx = Math.min(currentWaypoint + 1, FLIGHT_PATH.length - 1);
         const target = FLIGHT_PATH[targetIdx];
-        setDronePosition(prev => ({
-          x: prev.x + (target.x - prev.x) * 0.03,
-          y: prev.y + (target.y - prev.y) * 0.03,
-          rotation: prev.rotation,
-        }));
+        setDronePosition(prev => {
+          // Calculate direction vector to target
+          const dx = target.x - prev.x;
+          const dy = target.y - prev.y;
+
+          // Calculate rotation from direction of travel
+          // atan2 returns angle from positive X-axis (East = 0°)
+          // SVG chevron points UP by default, so add 90° offset
+          const rotation = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+
+          return {
+            x: prev.x + dx * 0.03,
+            y: prev.y + dy * 0.03,
+            rotation: rotation,
+          };
+        });
       }
     };
 
@@ -470,7 +495,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       fallback: 'NONE',
       reasonCode: null,
     });
-    setDronePosition({ x: FLIGHT_PATH[0].x, y: FLIGHT_PATH[0].y, rotation: 45 });
+    setDronePosition({ x: FLIGHT_PATH[0].x, y: FLIGHT_PATH[0].y, rotation: calculateRotationToWaypoint(0, 1) });
     setCurrentWaypoint(0);
     setVisitedPathIndex(0);
     setUnknownObject(null);
