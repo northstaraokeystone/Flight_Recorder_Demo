@@ -576,15 +576,18 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
               fontFamily: 'JetBrains Mono, monospace',
             }}
           >
-            {/* Boot text with typewriter effect - v4.0 spec */}
+            {/* Boot text with typewriter effect - v4.0 spec - CENTERED + HUGE for investors */}
             <div
               className="mb-8"
               style={{
-                fontSize: '16px',
-                color: bootProgress === 100 ? '#F8FAFC' : '#94A3B8',
-                letterSpacing: '0.05em',
+                fontSize: '36px',
+                fontWeight: 700,
+                color: '#F1F5F9',
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase',
                 transition: 'color 0.3s',
-                minHeight: '24px',
+                minHeight: '48px',
+                textShadow: '0 0 30px rgba(241, 245, 249, 0.3)',
               }}
             >
               {bootText && (
@@ -602,15 +605,17 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
               )}
             </div>
 
-            {/* SYSTEM LIVE flash effect */}
+            {/* SYSTEM LIVE flash effect - sized for investor visibility */}
             {bootProgress === 100 && (
               <div
                 className="animate-pulse"
                 style={{
-                  fontSize: '12px',
+                  fontSize: '20px',
+                  fontWeight: 600,
                   color: '#10B981',
-                  letterSpacing: '0.15em',
-                  marginTop: '16px',
+                  letterSpacing: '0.2em',
+                  marginTop: '24px',
+                  textShadow: '0 0 20px rgba(16, 185, 129, 0.5)',
                 }}
               >
                 ● ONLINE
