@@ -423,17 +423,25 @@ export function TacticalGrid({
           )}
 
           {/* Waypoints - move with world, scaled for zoom */}
+          {/* CLEAN SKY: Future waypoints are subtle dots, no labels (except DEST) */}
           {FLIGHT_PATH.map((wp, i) => {
             const isCurrent = i === currentWaypoint;
             const isCompleted = i < visitedPathIndex;
+            const isFuture = !isCurrent && !isCompleted;
+            const isDestination = wp.label === 'DEST';
             const screen = worldToScreen(wp.x, wp.y);
+
+            // CLEAN SKY: Future waypoints are nearly invisible small dots
+            // Only DEST label is shown for destination context
+            const futureRadius = isDestination ? 6 : 4;
+            const futureOpacity = isDestination ? 0.5 : 0.25;
 
             return (
               <g key={i}>
                 <circle
                   cx={screen.x}
                   cy={screen.y}
-                  r={isCurrent ? 12 : 8}
+                  r={isCurrent ? 12 : isCompleted ? 8 : futureRadius}
                   fill={isCurrent ? COLORS.waypointCurrent : 'none'}
                   stroke={
                     isCurrent
@@ -442,26 +450,31 @@ export function TacticalGrid({
                         ? COLORS.waypointCompleted
                         : COLORS.waypointFuture
                   }
-                  strokeWidth={isCurrent ? 3 : 2}
+                  strokeWidth={isCurrent ? 3 : isCompleted ? 2 : 1}
+                  opacity={isFuture ? futureOpacity : 1}
                   className={isCurrent ? 'animate-subtlePulse' : ''}
                 />
-                <text
-                  x={screen.x}
-                  y={screen.y - 18}
-                  textAnchor="middle"
-                  style={{
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    fontFamily: 'JetBrains Mono, monospace',
-                    fill: isCurrent
-                      ? COLORS.textSecondary
-                      : isCompleted
-                        ? COLORS.textTimestamp
-                        : COLORS.waypointFuture,
-                  }}
-                >
-                  {wp.label}
-                </text>
+                {/* CLEAN SKY: Only show labels for current, completed, and DEST waypoints */}
+                {(!isFuture || isDestination) && (
+                  <text
+                    x={screen.x}
+                    y={screen.y - 18}
+                    textAnchor="middle"
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      fontFamily: 'JetBrains Mono, monospace',
+                      fill: isCurrent
+                        ? COLORS.textSecondary
+                        : isCompleted
+                          ? COLORS.textTimestamp
+                          : COLORS.waypointFuture,
+                      opacity: isFuture && isDestination ? 0.5 : 1,
+                    }}
+                  >
+                    {wp.label}
+                  </text>
+                )}
               </g>
             );
           })}
@@ -585,85 +598,84 @@ export function TacticalGrid({
         </div>
       </div>
 
-      {/* LEADER LINE & CALLOUT - Rendered as fixed overlay */}
+      {/* LEADER LINE & CALLOUT - ANCHORED at fixed position (no motion sickness) */}
+      {/* DIRECTIVE 3: Callout is FIXED to viewport, only connector line points to drone */}
       {calloutVisible && activeCallout && (
-        <div
-          style={{
-            position: 'absolute',
-            left: 'calc(50% - 120px)',
-            top: 'calc(40% - 80px)',
-            transform: 'translate(-50%, -50%)',
-            zIndex: 51,
-            pointerEvents: 'none',
-          }}
-        >
-          <svg width="300" height="200" style={{ overflow: 'visible' }}>
-            {/* Leader line from drone position to callout */}
-            {/* QUIET SKY: Consistent colors - #F87171 red for errors, #FBBF24 amber for corrections */}
-            {/* FIX: Vector origin correctly at drone screen position - container is offset so line appears attached to drone */}
+        <>
+          {/* SVG connector line from drone to callout (updates with drone position) */}
+          <svg
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100vw',
+              height: '100vh',
+              pointerEvents: 'none',
+              zIndex: 50,
+            }}
+          >
+            {/* Leader line from drone (center) to callout box (bottom-center) */}
             <line
-              x1="270"
-              y1="180"
-              x2="150"
-              y2="100"
+              x1="50%"
+              y1="40%"
+              x2="50%"
+              y2="calc(100% - 380px)"
               stroke={activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24'}
-              strokeWidth="3"
-              strokeDasharray="6 3"
+              strokeWidth="2"
+              strokeDasharray="8 4"
+              opacity="0.6"
               style={{
-                filter: `drop-shadow(0 0 6px ${activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24'})`,
+                filter: `drop-shadow(0 0 4px ${activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24'})`,
               }}
             />
-            {/* Callout box */}
-            <g transform="translate(150, 100)">
-              <rect
-                x="-100"
-                y="-40"
-                width="200"
-                height="55"
-                fill="rgba(9, 9, 11, 0.95)"
-                stroke={activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24'}
-                strokeWidth="1"
-                rx="4"
-              />
-              {/* Left accent border */}
-              <rect
-                x="-100"
-                y="-40"
-                width="4"
-                height="55"
-                fill={activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24'}
-                rx="2"
-              />
-              {/* Callout text */}
-              <text
-                x="-90"
-                y="-20"
+          </svg>
+
+          {/* FIXED callout box - stays in place while drone moves */}
+          <div
+            style={{
+              position: 'fixed',
+              bottom: '340px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 51,
+              pointerEvents: 'none',
+            }}
+          >
+            <div
+              style={{
+                background: 'rgba(9, 9, 11, 0.95)',
+                border: `1px solid ${activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24'}`,
+                borderLeft: `4px solid ${activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24'}`,
+                borderRadius: '4px',
+                padding: '12px 16px',
+                minWidth: '220px',
+                boxShadow: `0 0 20px ${activeCallout.severity === 'critical' ? 'rgba(248, 113, 113, 0.3)' : 'rgba(251, 191, 36, 0.3)'}`,
+              }}
+            >
+              <div
                 style={{
                   fontSize: '14px',
                   fontFamily: 'JetBrains Mono, monospace',
-                  fill: activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24',
                   fontWeight: 700,
+                  color: activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24',
+                  marginBottom: '4px',
                 }}
               >
                 ⚠ {activeCallout.type.replace('_', ' ')}
-              </text>
-              <text
-                x="-90"
-                y="0"
+              </div>
+              <div
                 style={{
                   fontSize: '12px',
                   fontFamily: 'JetBrains Mono, monospace',
-                  fill: '#CBD5E1',
                   fontWeight: 500,
+                  color: '#CBD5E1',
                 }}
               >
-                {activeCallout.message.length > 28
-                  ? activeCallout.message.slice(0, 28) + '...'
-                  : activeCallout.message}
-              </text>
-            </g>
-          </svg>
-        </div>
+                {activeCallout.message}
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Telemetry Overlay - Top left corner - DEAL-KILLER #2 TEXT SIZES */}

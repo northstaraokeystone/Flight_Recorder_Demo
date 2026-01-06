@@ -116,6 +116,12 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
   const [isAnomalyDetected, setIsAnomalyDetected] = useState(false);
   const [isMissionComplete, setIsMissionComplete] = useState(false);
 
+  // BULLET TIME: Crisis pause state for dramatic effect
+  // When anomaly fires, simulation FREEZES for 3 seconds so viewer can read callout
+  const [isCrisisPaused, setIsCrisisPaused] = useState(false);
+  const crisisPauseStartRef = useRef<number | null>(null);
+  const CRISIS_PAUSE_DURATION = 3000; // 3 seconds - let the danger breathe
+
   // Timing refs
   const phaseStartRef = useRef(Date.now());
   const lastTickRef = useRef(Date.now());
@@ -275,6 +281,12 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         addLeaderLine('GPS_DRIFT', generateDualHash('gps-drift').sha256.slice(0, 8), 'critical');
         // Investor Narrator: Mark anomaly detected
         setIsAnomalyDetected(true);
+
+        // BULLET TIME: FREEZE simulation for 3 seconds
+        // This is the dramatic pause - let the danger breathe
+        // Drone stops, red vector visible, callout readable for full 3 seconds
+        setIsCrisisPaused(true);
+        crisisPauseStartRef.current = Date.now();
         break;
 
       case 'CRAG_TRIGGERED':
@@ -400,9 +412,25 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
 
     const tick = () => {
       const now = Date.now();
-      const phaseElapsed = now - phaseStartRef.current;
       setElapsedTime(now - startTimeRef.current);
       lastTickRef.current = now;
+
+      // BULLET TIME: Check if crisis pause should end
+      if (isCrisisPaused && crisisPauseStartRef.current) {
+        const pauseElapsed = now - crisisPauseStartRef.current;
+        if (pauseElapsed >= CRISIS_PAUSE_DURATION) {
+          // Resume simulation after 3 seconds
+          setIsCrisisPaused(false);
+          crisisPauseStartRef.current = null;
+          // Reset phase start time so UNCERTAINTY_DETECTED duration counts from resume
+          phaseStartRef.current = now;
+        }
+        // While paused: no phase transitions, no drone movement
+        // Scene is frozen - viewer can read the callout
+        return;
+      }
+
+      const phaseElapsed = now - phaseStartRef.current;
 
       // Phase transitions
       switch (phase) {
@@ -425,6 +453,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
           break;
 
         case 'UNCERTAINTY_DETECTED':
+          // BULLET TIME: Phase duration starts AFTER the 3-second pause ends
           if (phaseElapsed >= TIMING.PHASE_UNCERTAINTY_DURATION) {
             transitionToPhase('CRAG_TRIGGERED');
           }
@@ -462,7 +491,8 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       }
 
       // Smooth drone position interpolation with dynamic rotation
-      if (phase !== 'AFFIDAVIT' && phase !== 'TRUST_GAP' && phase !== 'MISSION_COMPLETE') {
+      // BULLET TIME: Also skip drone movement during crisis pause
+      if (phase !== 'AFFIDAVIT' && phase !== 'TRUST_GAP' && phase !== 'MISSION_COMPLETE' && !isCrisisPaused) {
         const targetIdx = Math.min(currentWaypoint + 1, FLIGHT_PATH.length - 1);
         const target = FLIGHT_PATH[targetIdx];
         setDronePosition(prev => {
@@ -486,7 +516,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
 
     const interval = setInterval(tick, 50);
     return () => clearInterval(interval);
-  }, [isRunning, phase, currentWaypoint, transitionToPhase]);
+  }, [isRunning, phase, currentWaypoint, transitionToPhase, isCrisisPaused, CRISIS_PAUSE_DURATION]);
 
   // Handle restart - v4.0 GLASS COCKPIT enhanced
   const handleRestart = useCallback(() => {
@@ -519,6 +549,10 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
     // Reset Investor Narrator state
     setIsAnomalyDetected(false);
     setIsMissionComplete(false);
+
+    // Reset BULLET TIME state
+    setIsCrisisPaused(false);
+    crisisPauseStartRef.current = null;
 
     // v4.0: Restart boot sequence - 5 second intro
     const bootSteps = [
