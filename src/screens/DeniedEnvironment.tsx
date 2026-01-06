@@ -794,7 +794,8 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
           {leaderLines.map((line, idx) => {
             const age = Date.now() - line.createdAt;
             const opacity = age > 4500 ? 0.3 : 1; // Fade in last 500ms
-            const lineColor = line.severity === 'critical' ? '#ef4444' : '#d97706';
+            // QUIET SKY: Bright red for errors (#EF4444), bright amber for corrections (#FBBF24)
+            const lineColor = line.severity === 'critical' ? '#EF4444' : '#FBBF24';
 
             // Calculate positions
             // Drone is at 50%, 40% of viewport

@@ -544,7 +544,7 @@ export function TacticalGrid({
             className="animate-subtlePulse"
           />
 
-          {/* CHEVRON (Λ) - The main drone visual */}
+          {/* CHEVRON (Λ) - The main drone visual - QUIET SKY: heading indicator removed */}
           <g
             transform={`rotate(${dronePosition.rotation})`}
             filter="url(#drone-glow-fixed)"
@@ -568,16 +568,7 @@ export function TacticalGrid({
               }}
             />
 
-            {/* Center line - heading indicator */}
-            <line
-              x1="0"
-              y1={-DRONE_VISUAL.SIZE / 2 - 8}
-              x2="0"
-              y2={-DRONE_VISUAL.SIZE / 2 - 20}
-              stroke={isLowConfidence ? COLORS.alertRed : DRONE_VISUAL.COLOR}
-              strokeWidth="2"
-              opacity="0.7"
-            />
+            {/* QUIET SKY: Heading indicator hidden - chevron shape shows direction clearly */}
           </g>
         </svg>
 
@@ -611,16 +602,17 @@ export function TacticalGrid({
         >
           <svg width="300" height="200" style={{ overflow: 'visible' }}>
             {/* Leader line from drone position to callout */}
+            {/* QUIET SKY: Consistent colors - #F87171 red for errors, #FBBF24 amber for corrections */}
             <line
               x1="220"
               y1="130"
               x2="150"
               y2="100"
-              stroke={activeCallout.severity === 'critical' ? '#FCA5A5' : '#fbbf24'}
+              stroke={activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24'}
               strokeWidth="3"
               strokeDasharray="6 3"
               style={{
-                filter: `drop-shadow(0 0 6px ${activeCallout.severity === 'critical' ? '#FCA5A5' : '#fbbf24'})`,
+                filter: `drop-shadow(0 0 6px ${activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24'})`,
               }}
             />
             {/* Callout box */}
@@ -631,7 +623,7 @@ export function TacticalGrid({
                 width="200"
                 height="55"
                 fill="rgba(9, 9, 11, 0.95)"
-                stroke={activeCallout.severity === 'critical' ? '#FCA5A5' : '#fbbf24'}
+                stroke={activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24'}
                 strokeWidth="1"
                 rx="4"
               />
@@ -641,7 +633,7 @@ export function TacticalGrid({
                 y="-40"
                 width="4"
                 height="55"
-                fill={activeCallout.severity === 'critical' ? '#FCA5A5' : '#fbbf24'}
+                fill={activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24'}
                 rx="2"
               />
               {/* Callout text */}
@@ -651,7 +643,7 @@ export function TacticalGrid({
                 style={{
                   fontSize: '14px',
                   fontFamily: 'JetBrains Mono, monospace',
-                  fill: activeCallout.severity === 'critical' ? '#FCA5A5' : '#fbbf24',
+                  fill: activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24',
                   fontWeight: 700,
                 }}
               >

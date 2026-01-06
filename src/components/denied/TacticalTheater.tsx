@@ -416,19 +416,12 @@ export function TacticalTheater({
           </g>
         )}
 
-        {/* Drone icon - SMALL triangle (8px) with velocity vector */}
+        {/* Drone icon - SMALL triangle (8px) - QUIET SKY: velocity vector removed */}
         <g
           transform={`translate(${dronePosition.x}, ${dronePosition.y}) rotate(${dronePosition.rotation})`}
           filter="url(#drone-glow)"
         >
-          {/* Velocity vector - thin line extending from nose */}
-          <line
-            x1="0" y1="-5"
-            x2="0" y2="-18"
-            stroke={COLORS.statusOnline}
-            strokeWidth="0.5"
-            opacity="0.6"
-          />
+          {/* QUIET SKY: Velocity vector hidden - debug only, adds visual noise */}
           {/* Small triangle (8px) */}
           <polygon
             points="-4,4 0,-5 4,4 0,2"
