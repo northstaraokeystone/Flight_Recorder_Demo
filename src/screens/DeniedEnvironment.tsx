@@ -51,15 +51,6 @@ interface LeaderLine {
   targetIndex: number; // Which log entry to connect to
 }
 
-// Governance badge for on-change display
-interface GovernanceBadge {
-  id: string;
-  type: 'RACI_HANDOFF' | 'MODE_CHANGE' | 'CONFIDENCE_DROP' | 'CRAG_ACTIVE';
-  title: string;
-  detail: string;
-  severity: 'info' | 'warning' | 'critical';
-  timestamp: number;
-}
 
 // Screen border pulse state
 type BorderPulseState = 'none' | 'amber' | 'red';
@@ -108,7 +99,6 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
 
   // Cinematic HUD state
   const [activeCallout, setActiveCallout] = useState<ActiveCallout | null>(null);
-  const [governanceBadges, setGovernanceBadges] = useState<GovernanceBadge[]>([]);
   const [borderPulse, setBorderPulse] = useState<BorderPulseState>('none');
   const [mapOpacity, setMapOpacity] = useState(0);
   const [showMerkleRoot, setShowMerkleRoot] = useState(false);
@@ -125,21 +115,6 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
   // Generate Merkle root for seal
   const merkleRoot = useMemo(() => {
     return generateDualHash(`merkle-root-${AFFIDAVIT_DATA.missionId}-final`).sha256;
-  }, []);
-
-  // Add governance badge (on-change display)
-  const addGovernanceBadge = useCallback((badge: Omit<GovernanceBadge, 'id' | 'timestamp'>) => {
-    const newBadge: GovernanceBadge = {
-      ...badge,
-      id: `badge-${Date.now()}`,
-      timestamp: Date.now(),
-    };
-    setGovernanceBadges(prev => [...prev, newBadge]);
-
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-      setGovernanceBadges(prev => prev.filter(b => b.id !== newBadge.id));
-    }, 5000);
   }, []);
 
   // v4.0: Add leader line for Action-Reaction Connectors
@@ -272,16 +247,10 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
           reasonCode: 'RC006_CONTEXT_MISSING',
         }));
 
-        // Cinematic effects: callout, badge, border pulse
+        // Cinematic effects: callout, border pulse
         setActiveCallout({
           type: 'GPS_DRIFT',
           message: 'GPS signal degradation detected',
-          severity: 'critical',
-        });
-        addGovernanceBadge({
-          type: 'CONFIDENCE_DROP',
-          title: 'CONFIDENCE DROP',
-          detail: '0.98 -> 0.62',
           severity: 'critical',
         });
         setBorderPulse('amber');
@@ -303,12 +272,6 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
           message: 'Querying external knowledge',
           severity: 'warning',
         });
-        addGovernanceBadge({
-          type: 'CRAG_ACTIVE',
-          title: 'CRAG ACTIVE',
-          detail: 'External query in progress',
-          severity: 'warning',
-        });
         // v4.0: Leader line for CRAG fallback
         addLeaderLine('CRAG_FALLBACK', generateDualHash('crag-fallback').sha256.slice(0, 8), 'warning');
         break;
@@ -326,12 +289,6 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         setActiveCallout({
           type: 'RACI_HANDOFF',
           message: 'Control to Safety Officer',
-          severity: 'critical',
-        });
-        addGovernanceBadge({
-          type: 'RACI_HANDOFF',
-          title: 'RACI HANDOFF',
-          detail: 'AI -> HUMAN (Safety Officer)',
           severity: 'critical',
         });
         setBorderPulse('red');
@@ -361,12 +318,6 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
 
         // Cinematic effects
         setActiveCallout(null);
-        addGovernanceBadge({
-          type: 'MODE_CHANGE',
-          title: 'HUMAN RESPONSE',
-          detail: 'GPS recalibrated - PROCEED',
-          severity: 'info',
-        });
         setBorderPulse('none');
         break;
 
@@ -378,14 +329,6 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
           mode: 'AUTONOMOUS',
           crag: 'STANDBY',
         }));
-
-        // Cinematic effects
-        addGovernanceBadge({
-          type: 'RACI_HANDOFF',
-          title: 'RACI HANDOFF',
-          detail: 'HUMAN -> AI (Control returned)',
-          severity: 'info',
-        });
         break;
 
       case 'ROUTE_RESUMED':
@@ -425,7 +368,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
 
       // TRUST_GAP REMOVED - Demo ends on Affidavit (Deal-Killer #4)
     }
-  }, [addLogEntry, addGovernanceBadge, addLeaderLine]);
+  }, [addLogEntry, addLeaderLine]);
 
   // Main simulation loop
   useEffect(() => {
@@ -533,7 +476,6 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
     setLegacyEntries([]);
     blockCountRef.current = 0;
     setActiveCallout(null);
-    setGovernanceBadges([]);
     setLeaderLines([]);
     setBorderPulse('none');
     setMapOpacity(0);
@@ -1045,57 +987,6 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         </div>
       )}
 
-      {/* ===== TOP RIGHT: Governance Badges - DEAL-KILLER #2 TEXT SIZES ===== */}
-      <div className="absolute top-4 right-4 z-40 space-y-3">
-        {governanceBadges.map(badge => (
-          <div
-            key={badge.id}
-            className="animate-fadeIn"
-            style={{
-              backgroundColor: 'rgba(9, 9, 11, 0.95)',
-              backdropFilter: 'blur(4px)',
-              border: `1px solid ${
-                badge.severity === 'critical' ? '#FCA5A5' :
-                badge.severity === 'warning' ? '#fbbf24' :
-                'rgba(255,255,255,0.1)'
-              }`,
-              borderLeft: `4px solid ${
-                badge.severity === 'critical' ? '#FCA5A5' :
-                badge.severity === 'warning' ? '#fbbf24' :
-                '#94a3b8'
-              }`,
-              borderRadius: '4px',
-              padding: '16px 20px',
-              maxWidth: '280px',
-            }}
-          >
-            <div
-              style={{
-                fontSize: badge.severity === 'critical' ? '16px' : '14px',
-                fontWeight: 700,
-                color: badge.severity === 'critical' ? '#FCA5A5' :
-                       badge.severity === 'warning' ? '#fbbf24' :
-                       '#F1F5F9',
-                letterSpacing: '0.05em',
-                marginBottom: '6px',
-              }}
-            >
-              {badge.title}
-            </div>
-            <div
-              style={{
-                fontSize: '14px',
-                fontWeight: 500,
-                color: '#CBD5E1',
-                fontFamily: 'JetBrains Mono, monospace',
-                lineHeight: '1.6',
-              }}
-            >
-              {badge.detail}
-            </div>
-          </div>
-        ))}
-      </div>
 
       {/* ===== ACT III: THE SEAL - v4.0 GLASS COCKPIT Cinematic Outro ===== */}
       {demoPhase === 'SEAL' && (
