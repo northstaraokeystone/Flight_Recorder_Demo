@@ -46,12 +46,11 @@ interface TelemetryData {
 
 // Camera constants - drone locked at center
 // GLASS COCKPIT v4.0: Drone is the fixed point of the universe
-const CAMERA = {
+const CAMERA_DEFAULTS = {
   DRONE_X_PERCENT: 0.5,  // 50% from left - EXACTLY CENTER
   DRONE_Y_PERCENT: 0.4,  // 40% from top - GOLDEN RATIO
-  VIEWPORT_WIDTH: 560,
-  VIEWPORT_HEIGHT: 360,
   ZOOM: 2.5,             // v4.0: Drone is quarter-sized, not pixel
+  GRID_SPACING: 20,      // World space grid spacing
 };
 
 // Drone visual specifications - v4.0 CHEVRON
@@ -63,10 +62,6 @@ const DRONE_VISUAL = {
   PULSE_MAX: 1.0,
   PULSE_DURATION: 2000,  // 2s cycle
 };
-
-// Calculate screen position for drone
-const DRONE_SCREEN_X = CAMERA.VIEWPORT_WIDTH * CAMERA.DRONE_X_PERCENT;
-const DRONE_SCREEN_Y = CAMERA.VIEWPORT_HEIGHT * CAMERA.DRONE_Y_PERCENT;
 
 export function TacticalGrid({
   dronePosition,
@@ -81,6 +76,41 @@ export function TacticalGrid({
   const lastPhaseRef = useRef(phase);
   const [calloutVisible, setCalloutVisible] = useState(false);
   const calloutTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Dynamic viewport dimensions - fills entire screen
+  const [viewport, setViewport] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1920,
+    height: typeof window !== 'undefined' ? window.innerHeight : 1080,
+  });
+
+  // Resize handler for responsive updates
+  useEffect(() => {
+    const handleResize = () => {
+      setViewport({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    // Initial call to set correct dimensions
+    handleResize();
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Computed camera values based on viewport
+  const CAMERA = useMemo(() => ({
+    VIEWPORT_WIDTH: viewport.width,
+    VIEWPORT_HEIGHT: viewport.height,
+    DRONE_X_PERCENT: CAMERA_DEFAULTS.DRONE_X_PERCENT,
+    DRONE_Y_PERCENT: CAMERA_DEFAULTS.DRONE_Y_PERCENT,
+    ZOOM: CAMERA_DEFAULTS.ZOOM,
+  }), [viewport.width, viewport.height]);
+
+  // Calculate screen position for drone
+  const DRONE_SCREEN_X = CAMERA.VIEWPORT_WIDTH * CAMERA.DRONE_X_PERCENT;
+  const DRONE_SCREEN_Y = CAMERA.VIEWPORT_HEIGHT * CAMERA.DRONE_Y_PERCENT;
 
   // Check if in uncertainty zone
   const isUncertaintyPhase = [
@@ -213,16 +243,26 @@ export function TacticalGrid({
 
   return (
     <div
-      className="relative w-full h-full overflow-hidden"
+      className="relative overflow-hidden"
       style={{
         backgroundColor: COLORS.bgPrimary,
+        width: '100vw',
+        height: '100vh',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        zIndex: 0,
       }}
     >
       {/* SVG Map - Full Bleed */}
       <svg
         viewBox={`0 0 ${CAMERA.VIEWPORT_WIDTH} ${CAMERA.VIEWPORT_HEIGHT}`}
-        className="w-full h-full"
-        preserveAspectRatio="xMidYMid slice"
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'block',
+        }}
+        preserveAspectRatio="none"
       >
         {/* Background */}
         <rect width="100%" height="100%" fill={COLORS.bgPrimary} />
@@ -231,38 +271,53 @@ export function TacticalGrid({
         <g className="world-layer">
           {/* Barely visible grid lines - translated with world and ZOOM */}
           <g opacity="0.12">
-            {/* Vertical lines - scaled by ZOOM */}
-            {Array.from({ length: 60 }).map((_, i) => {
-              const worldX = i * 20;
-              const screenX = worldX * CAMERA.ZOOM - worldOffset.x;
+            {/* Calculate number of grid lines needed to cover viewport + buffer */}
+            {(() => {
+              const gridSpacing = CAMERA_DEFAULTS.GRID_SPACING;
+              const scaledSpacing = gridSpacing * CAMERA.ZOOM;
+              // Add extra lines beyond viewport for smooth scrolling
+              const buffer = 400;
+              const numVertical = Math.ceil((CAMERA.VIEWPORT_WIDTH + buffer * 2) / scaledSpacing) + 1;
+              const numHorizontal = Math.ceil((CAMERA.VIEWPORT_HEIGHT + buffer * 2) / scaledSpacing) + 1;
+              // Start offset to ensure lines cover area before viewport origin
+              const startOffsetX = Math.floor(worldOffset.x / scaledSpacing) * scaledSpacing;
+              const startOffsetY = Math.floor(worldOffset.y / scaledSpacing) * scaledSpacing;
+
               return (
-                <line
-                  key={`v-${i}`}
-                  x1={screenX}
-                  y1={0}
-                  x2={screenX}
-                  y2={CAMERA.VIEWPORT_HEIGHT}
-                  stroke={COLORS.textTimestamp}
-                  strokeWidth="0.5"
-                />
+                <>
+                  {/* Vertical lines - scaled by ZOOM */}
+                  {Array.from({ length: numVertical }).map((_, i) => {
+                    const screenX = startOffsetX - worldOffset.x - buffer + i * scaledSpacing;
+                    return (
+                      <line
+                        key={`v-${i}`}
+                        x1={screenX}
+                        y1={-buffer}
+                        x2={screenX}
+                        y2={CAMERA.VIEWPORT_HEIGHT + buffer}
+                        stroke={COLORS.textTimestamp}
+                        strokeWidth="0.5"
+                      />
+                    );
+                  })}
+                  {/* Horizontal lines - scaled by ZOOM */}
+                  {Array.from({ length: numHorizontal }).map((_, i) => {
+                    const screenY = startOffsetY - worldOffset.y - buffer + i * scaledSpacing;
+                    return (
+                      <line
+                        key={`h-${i}`}
+                        x1={-buffer}
+                        y1={screenY}
+                        x2={CAMERA.VIEWPORT_WIDTH + buffer}
+                        y2={screenY}
+                        stroke={COLORS.textTimestamp}
+                        strokeWidth="0.5"
+                      />
+                    );
+                  })}
+                </>
               );
-            })}
-            {/* Horizontal lines - scaled by ZOOM */}
-            {Array.from({ length: 40 }).map((_, i) => {
-              const worldY = i * 20;
-              const screenY = worldY * CAMERA.ZOOM - worldOffset.y;
-              return (
-                <line
-                  key={`h-${i}`}
-                  x1={0}
-                  y1={screenY}
-                  x2={CAMERA.VIEWPORT_WIDTH}
-                  y2={screenY}
-                  stroke={COLORS.textTimestamp}
-                  strokeWidth="0.5"
-                />
-              );
-            })}
+            })()}
           </g>
 
           {/* Radar crosshairs - at center of viewport (fixed) */}
