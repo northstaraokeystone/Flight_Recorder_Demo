@@ -122,10 +122,11 @@ export function TacticalGrid({
   // CAMERA FOLLOW SYSTEM: Calculate world offset with ZOOM
   // v4.0 GLASS COCKPIT: Drone stays at fixed screen position,
   // world translates AND scales around the drone
+  // The offset is recalculated whenever drone position or viewport changes
   const worldOffset = useMemo(() => ({
     x: dronePosition.x * CAMERA.ZOOM - DRONE_SCREEN_X,
     y: dronePosition.y * CAMERA.ZOOM - DRONE_SCREEN_Y,
-  }), [dronePosition.x, dronePosition.y]);
+  }), [dronePosition.x, dronePosition.y, CAMERA.ZOOM, DRONE_SCREEN_X, DRONE_SCREEN_Y]);
 
   // Transform world coordinates to screen coordinates with ZOOM
   const worldToScreen = (worldX: number, worldY: number) => ({
@@ -199,6 +200,7 @@ export function TacticalGrid({
   }, [activeCallout]);
 
   // Generate path string for completed trail (in world coords, will be transformed)
+  // Recalculates when drone moves (worldOffset changes) or waypoints are visited
   const completedPathD = useMemo(() => {
     const points = FLIGHT_PATH.slice(0, Math.min(visitedPathIndex + 1, FLIGHT_PATH.length));
     if (points.length === 0) return '';
@@ -206,9 +208,9 @@ export function TacticalGrid({
       const screen = worldToScreen(pt.x, pt.y);
       return acc + (i === 0 ? `M ${screen.x} ${screen.y}` : ` L ${screen.x} ${screen.y}`);
     }, '');
-  }, [visitedPathIndex, worldOffset.x, worldOffset.y]);
+  }, [visitedPathIndex, worldOffset.x, worldOffset.y, CAMERA.ZOOM]);
 
-  // Future path (dimmer)
+  // Future path (dimmer) - shows remaining waypoints
   const futurePathD = useMemo(() => {
     const futurePoints = FLIGHT_PATH.slice(Math.max(visitedPathIndex, 0));
     if (futurePoints.length < 2) return '';
@@ -216,7 +218,7 @@ export function TacticalGrid({
       const screen = worldToScreen(pt.x, pt.y);
       return acc + (i === 0 ? `M ${screen.x} ${screen.y}` : ` L ${screen.x} ${screen.y}`);
     }, '');
-  }, [visitedPathIndex, worldOffset.x, worldOffset.y]);
+  }, [visitedPathIndex, worldOffset.x, worldOffset.y, CAMERA.ZOOM]);
 
   // Active segment from last waypoint to drone (drone is fixed at center)
   const activeSegmentStart = useMemo(() => {
@@ -224,7 +226,7 @@ export function TacticalGrid({
       return worldToScreen(FLIGHT_PATH[visitedPathIndex - 1].x, FLIGHT_PATH[visitedPathIndex - 1].y);
     }
     return null;
-  }, [visitedPathIndex, worldOffset.x, worldOffset.y]);
+  }, [visitedPathIndex, worldOffset.x, worldOffset.y, CAMERA.ZOOM]);
 
   // Determine display state
   const showUnknownObject = unknownObject?.detected || isUncertaintyPhase;
