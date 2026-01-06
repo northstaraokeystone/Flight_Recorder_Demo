@@ -51,6 +51,23 @@ function generateBlock(id: number, status: 'PENDING' | 'SYNCED' | 'VERIFIED'): C
   };
 }
 
+// Smooth interpolation between two points
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * Math.min(1, Math.max(0, t));
+}
+
+// Ease out cubic for smoother deceleration
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+// Calculate rotation angle between two points
+function getRotation(from: { x: number; y: number }, to: { x: number; y: number }): number {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  return Math.atan2(dy, dx) * (180 / Math.PI) + 90; // +90 because drone points up by default
+}
+
 interface DeniedEnvironmentProps {
   onComplete?: () => void;
 }
@@ -58,11 +75,26 @@ interface DeniedEnvironmentProps {
 export function DeniedEnvironment({ onComplete }: DeniedEnvironmentProps) {
   const [state, setState] = useState<ScenarioState>(createInitialScenarioState);
   const [pathIndex, setPathIndex] = useState(0);
+  const [tick, setTick] = useState(0); // Animation driver
   const phaseTimeRef = useRef<number>(0);
+  const animationRef = useRef<number | null>(null);
 
-  // Initialize timing ref on mount
+  // Animation loop - drives the entire scenario
   useEffect(() => {
     phaseTimeRef.current = Date.now();
+
+    const animate = () => {
+      setTick(t => t + 1);
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
   }, []);
 
   // Phase transition logic
@@ -132,17 +164,32 @@ export function DeniedEnvironment({ onComplete }: DeniedEnvironmentProps) {
 
     switch (state.phase) {
       case 'NORMAL_OPS': {
-        // Update drone position along path
-        const progressRatio = phaseElapsed / TIMING.PHASE_NORMAL_OPS_DURATION;
-        const targetIndex = Math.min(Math.floor(progressRatio * 3), 2);
-        if (targetIndex > pathIndex) {
-          setPathIndex(targetIndex);
-          const wp = FLIGHT_PATH[targetIndex];
-          setState(prev => ({
-            ...prev,
-            dronePosition: { x: wp.x, y: wp.y, rotation: 45 },
-          }));
+        // Smooth drone movement through first 3 waypoints
+        const progressRatio = Math.min(phaseElapsed / TIMING.PHASE_NORMAL_OPS_DURATION, 1);
+        const easedProgress = easeOutCubic(progressRatio);
+
+        // Interpolate between waypoints 0-2
+        const segmentProgress = easedProgress * 2; // 0-2 for 3 waypoints
+        const segmentIndex = Math.min(Math.floor(segmentProgress), 1);
+        const segmentT = segmentProgress - segmentIndex;
+
+        const fromWp = FLIGHT_PATH[segmentIndex];
+        const toWp = FLIGHT_PATH[segmentIndex + 1];
+
+        const newX = lerp(fromWp.x, toWp.x, segmentT);
+        const newY = lerp(fromWp.y, toWp.y, segmentT);
+        const newRotation = getRotation(fromWp, toWp);
+
+        // Update path index for trail visualization
+        const newPathIndex = Math.min(Math.floor(segmentProgress) + 1, 2);
+        if (newPathIndex > pathIndex) {
+          setPathIndex(newPathIndex);
         }
+
+        setState(prev => ({
+          ...prev,
+          dronePosition: { x: newX, y: newY, rotation: newRotation },
+        }));
 
         // Add initial log entries
         if (phaseElapsed > 500 && state.decisionLog.length === 0) {
@@ -168,17 +215,25 @@ export function DeniedEnvironment({ onComplete }: DeniedEnvironmentProps) {
       }
 
       case 'DEGRADED': {
-        // Update drone position
-        const progressRatio = phaseElapsed / TIMING.PHASE_DEGRADED_DURATION;
-        const targetIndex = 2 + Math.min(Math.floor(progressRatio * 2), 1);
-        if (targetIndex > pathIndex) {
-          setPathIndex(targetIndex);
-          const wp = FLIGHT_PATH[targetIndex];
-          setState(prev => ({
-            ...prev,
-            dronePosition: { x: wp.x, y: wp.y, rotation: 60 },
-          }));
+        // Smooth drone movement from waypoint 2 to 3
+        const progressRatio = Math.min(phaseElapsed / TIMING.PHASE_DEGRADED_DURATION, 1);
+        const easedProgress = easeOutCubic(progressRatio);
+
+        const fromWp = FLIGHT_PATH[2];
+        const toWp = FLIGHT_PATH[3];
+
+        const newX = lerp(fromWp.x, toWp.x, easedProgress);
+        const newY = lerp(fromWp.y, toWp.y, easedProgress);
+        const newRotation = getRotation(fromWp, toWp);
+
+        if (progressRatio > 0.5 && pathIndex < 3) {
+          setPathIndex(3);
         }
+
+        setState(prev => ({
+          ...prev,
+          dronePosition: { x: newX, y: newY, rotation: newRotation },
+        }));
 
         // Transition to offline
         if (phaseElapsed >= TIMING.PHASE_DEGRADED_DURATION) {
@@ -194,24 +249,32 @@ export function DeniedEnvironment({ onComplete }: DeniedEnvironmentProps) {
       }
 
       case 'OFFLINE': {
-        // Generate receipts while offline
-        const receiptInterval = setInterval(() => {
-          if (state.offlineReceiptCount < 60) {
-            addBlock();
-          }
-        }, TIMING.RECEIPT_TICK_INTERVAL);
+        // Smooth drone movement from waypoint 3 to 5 (toward incident point)
+        const progressRatio = Math.min(phaseElapsed / 8000, 1); // 8 seconds to reach incident
+        const easedProgress = easeOutCubic(progressRatio);
 
-        // Update drone position deeper into dead zone
-        const progressRatio = phaseElapsed / 8000; // 8 seconds to reach incident point
-        const targetIndex = 3 + Math.min(Math.floor(progressRatio * 2), 2);
-        if (targetIndex > pathIndex && targetIndex <= 5) {
-          setPathIndex(targetIndex);
-          const wp = FLIGHT_PATH[targetIndex];
-          setState(prev => ({
-            ...prev,
-            dronePosition: { x: wp.x, y: wp.y, rotation: 70 },
-          }));
+        // Interpolate between waypoints 3-5
+        const segmentProgress = easedProgress * 2; // 0-2 for waypoints 3,4,5
+        const segmentIndex = Math.min(Math.floor(segmentProgress), 1);
+        const segmentT = segmentProgress - segmentIndex;
+
+        const fromWp = FLIGHT_PATH[3 + segmentIndex];
+        const toWp = FLIGHT_PATH[4 + segmentIndex];
+
+        const newX = lerp(fromWp.x, toWp.x, segmentT);
+        const newY = lerp(fromWp.y, toWp.y, segmentT);
+        const newRotation = getRotation(fromWp, toWp);
+
+        // Update path index for trail visualization
+        const newPathIndex = 3 + Math.min(Math.floor(segmentProgress) + 1, 2);
+        if (newPathIndex > pathIndex && newPathIndex <= 5) {
+          setPathIndex(newPathIndex);
         }
+
+        setState(prev => ({
+          ...prev,
+          dronePosition: { x: newX, y: newY, rotation: newRotation },
+        }));
 
         // Add waypoint logs
         if (phaseElapsed > 2000 && state.decisionLog.length < 6) {
@@ -220,7 +283,6 @@ export function DeniedEnvironment({ onComplete }: DeniedEnvironmentProps) {
 
         // Transition to incident after 8 seconds
         if (phaseElapsed >= 8000) {
-          clearInterval(receiptInterval);
           transitionToPhase('INCIDENT_DETECTED');
 
           // Detect threat
@@ -231,8 +293,7 @@ export function DeniedEnvironment({ onComplete }: DeniedEnvironmentProps) {
           }));
           addLogEntry({ eventType: 'OBSTACLE_DETECTED', value: 'LIAB_TARGET_01', severity: 'CRITICAL', offline: true, timeOffset: 20 });
         }
-
-        return () => clearInterval(receiptInterval);
+        break;
       }
 
       case 'INCIDENT_DETECTED': {
@@ -250,6 +311,29 @@ export function DeniedEnvironment({ onComplete }: DeniedEnvironmentProps) {
       }
 
       case 'STOP_RULE_TRIGGERED': {
+        // Smooth start of avoidance curve
+        const progressRatio = Math.min(phaseElapsed / 1500, 1);
+        const easedProgress = easeOutCubic(progressRatio);
+
+        // Start turning away - interpolate from incident point toward first avoidance point
+        const fromWp = FLIGHT_PATH[5]; // Incident detection point
+        const toWp = FLIGHT_PATH[6];   // First avoidance point
+
+        const newX = lerp(fromWp.x, toWp.x, easedProgress);
+        const newY = lerp(fromWp.y, toWp.y, easedProgress);
+
+        // Rotate toward turn direction
+        const newRotation = lerp(70, 180, easedProgress);
+
+        setState(prev => ({
+          ...prev,
+          dronePosition: { x: newX, y: newY, rotation: newRotation },
+          avoidancePath: [
+            { x: fromWp.x, y: fromWp.y },
+            { x: newX, y: newY },
+          ],
+        }));
+
         // Add maneuver log
         if (phaseElapsed > 500 && state.decisionLog.length < 10) {
           addLogEntry({ eventType: 'MANEUVER', value: 'EXECUTED', severity: 'SUCCESS', offline: true, timeOffset: 23 });
@@ -259,17 +343,11 @@ export function DeniedEnvironment({ onComplete }: DeniedEnvironmentProps) {
         if (phaseElapsed >= 1500) {
           transitionToPhase('AVOIDANCE_EXECUTED');
 
-          // Update threat and position
+          // Update threat and ROI - the save!
           setState(prev => ({
             ...prev,
             threat: prev.threat ? { ...prev.threat, avoided: true } : null,
             roi: { ...prev.roi, riskMitigated: MONEY_SHOTS.LIABILITY_EXPOSURE, incidentActive: false },
-            dronePosition: { x: 340, y: 170, rotation: 180 },
-            avoidancePath: [
-              { x: 350, y: 135 },
-              { x: 340, y: 155 },
-              { x: 340, y: 170 },
-            ],
           }));
           setPathIndex(6);
         }
@@ -277,27 +355,42 @@ export function DeniedEnvironment({ onComplete }: DeniedEnvironmentProps) {
       }
 
       case 'AVOIDANCE_EXECUTED': {
-        // Continue generating receipts
-        const receiptInterval = setInterval(() => {
-          if (state.offlineReceiptCount < MONEY_SHOTS.FINAL_RECEIPTS_SYNCED - 20) {
-            addBlock();
-          }
-        }, TIMING.RECEIPT_TICK_INTERVAL);
+        // Smooth drone movement along avoidance path (waypoints 6-8)
+        const progressRatio = Math.min(phaseElapsed / TIMING.PHASE_RECONNECT_DURATION, 1);
+        const easedProgress = easeOutCubic(progressRatio);
 
-        // Update drone position along avoidance path
-        if (phaseElapsed > 2000 && pathIndex < 8) {
-          const wp = FLIGHT_PATH[7];
-          setState(prev => ({
-            ...prev,
-            dronePosition: { x: wp.x, y: wp.y, rotation: 220 },
-            avoidancePath: [...prev.avoidancePath, { x: wp.x, y: wp.y }],
-          }));
-          setPathIndex(8);
+        // Interpolate between waypoints 6-8 (3 points = 2 segments)
+        const segmentProgress = easedProgress * 2;
+        const segmentIndex = Math.min(Math.floor(segmentProgress), 1);
+        const segmentT = segmentProgress - segmentIndex;
+
+        const fromWp = FLIGHT_PATH[6 + segmentIndex];
+        const toWp = FLIGHT_PATH[7 + segmentIndex];
+
+        const newX = lerp(fromWp.x, toWp.x, segmentT);
+        const newY = lerp(fromWp.y, toWp.y, segmentT);
+        const newRotation = getRotation(fromWp, toWp);
+
+        // Update path index for trail visualization
+        const newPathIndex = 6 + Math.min(Math.floor(segmentProgress) + 1, 2);
+        if (newPathIndex > pathIndex) {
+          setPathIndex(newPathIndex);
         }
+
+        // Build avoidance path for visualization
+        const avoidancePoints = [{ x: 350, y: 135 }]; // Start point
+        if (segmentProgress > 0.5) avoidancePoints.push({ x: FLIGHT_PATH[6].x, y: FLIGHT_PATH[6].y });
+        if (segmentProgress > 1) avoidancePoints.push({ x: FLIGHT_PATH[7].x, y: FLIGHT_PATH[7].y });
+        avoidancePoints.push({ x: newX, y: newY });
+
+        setState(prev => ({
+          ...prev,
+          dronePosition: { x: newX, y: newY, rotation: newRotation },
+          avoidancePath: avoidancePoints,
+        }));
 
         // Transition to reconnecting
         if (phaseElapsed >= TIMING.PHASE_RECONNECT_DURATION) {
-          clearInterval(receiptInterval);
           transitionToPhase('RECONNECTING');
           setState(prev => ({
             ...prev,
@@ -305,18 +398,29 @@ export function DeniedEnvironment({ onComplete }: DeniedEnvironmentProps) {
           }));
           addLogEntry({ eventType: 'COMMS_STATUS', value: 'RESTORED', severity: 'SUCCESS', offline: false, timeOffset: 35 });
         }
-
-        return () => clearInterval(receiptInterval);
+        break;
       }
 
       case 'RECONNECTING': {
-        // Final receipts before sync
-        if (state.offlineReceiptCount < MONEY_SHOTS.FINAL_RECEIPTS_SYNCED) {
-          const remaining = MONEY_SHOTS.FINAL_RECEIPTS_SYNCED - state.offlineReceiptCount;
-          for (let i = 0; i < Math.min(remaining, 10); i++) {
-            addBlock();
-          }
+        // Smooth drone movement from waypoint 8 to 9 (exiting dead zone)
+        const progressRatio = Math.min(phaseElapsed / 2000, 1);
+        const easedProgress = easeOutCubic(progressRatio);
+
+        const fromWp = FLIGHT_PATH[8];
+        const toWp = FLIGHT_PATH[9];
+
+        const newX = lerp(fromWp.x, toWp.x, easedProgress);
+        const newY = lerp(fromWp.y, toWp.y, easedProgress);
+        const newRotation = getRotation(fromWp, toWp);
+
+        if (progressRatio > 0.5 && pathIndex < 9) {
+          setPathIndex(9);
         }
+
+        setState(prev => ({
+          ...prev,
+          dronePosition: { x: newX, y: newY, rotation: newRotation },
+        }));
 
         // Transition to burst sync
         if (phaseElapsed >= 2000) {
@@ -327,20 +431,39 @@ export function DeniedEnvironment({ onComplete }: DeniedEnvironmentProps) {
       }
 
       case 'BURST_SYNC': {
-        // Rapidly sync blocks
-        const syncInterval = setInterval(() => {
-          const pendingBlocks = state.chainBlocks.filter(b => b.status === 'PENDING');
-          if (pendingBlocks.length > 0) {
-            syncNextBlock();
-          } else {
-            clearInterval(syncInterval);
-          }
-        }, TIMING.BURST_SYNC_SPEED);
+        // Smooth drone movement to final position (waypoint 9 to 10)
+        const progressRatio = Math.min(phaseElapsed / 3000, 1);
+        const easedProgress = easeOutCubic(progressRatio);
+
+        const fromWp = FLIGHT_PATH[9];
+        const toWp = FLIGHT_PATH[10];
+
+        const newX = lerp(fromWp.x, toWp.x, easedProgress);
+        const newY = lerp(fromWp.y, toWp.y, easedProgress);
+        const newRotation = getRotation(fromWp, toWp);
+
+        if (progressRatio > 0.5 && pathIndex < 10) {
+          setPathIndex(10);
+        }
+
+        setState(prev => ({
+          ...prev,
+          dronePosition: { x: newX, y: newY, rotation: newRotation },
+        }));
+
+        // Calculate how many blocks should be synced by now based on elapsed time
+        const blocksShouldBeSynced = Math.floor(phaseElapsed / TIMING.BURST_SYNC_SPEED);
+        const pendingBlocks = state.chainBlocks.filter(b => b.status === 'PENDING');
+        const syncedBlocks = state.chainBlocks.filter(b => b.status !== 'PENDING');
+
+        // Sync next block if we're behind
+        if (syncedBlocks.length < blocksShouldBeSynced && pendingBlocks.length > 0) {
+          syncNextBlock();
+        }
 
         // Check if all synced
-        const allSynced = state.chainBlocks.every(b => b.status !== 'PENDING');
-        if (allSynced && phaseElapsed >= 3000) {
-          clearInterval(syncInterval);
+        const allSynced = pendingBlocks.length === 0;
+        if (allSynced && state.chainBlocks.length > 0) {
           transitionToPhase('VERIFIED');
           verifyAllBlocks();
           addLogEntry({ eventType: 'CHAIN_INTEGRITY', value: 'VERIFIED', severity: 'SUCCESS', offline: false, timeOffset: 40 });
@@ -350,8 +473,7 @@ export function DeniedEnvironment({ onComplete }: DeniedEnvironmentProps) {
             link: { ...prev.link, protocol: 'CLOUD_SYNC' },
           }));
         }
-
-        return () => clearInterval(syncInterval);
+        break;
       }
 
       case 'VERIFIED': {
@@ -369,19 +491,8 @@ export function DeniedEnvironment({ onComplete }: DeniedEnvironmentProps) {
         // Final state - do nothing
         break;
     }
-  }, [
-    state.phase,
-    state.decisionLog.length,
-    state.offlineReceiptCount,
-    state.chainBlocks,
-    pathIndex,
-    addLogEntry,
-    addBlock,
-    syncNextBlock,
-    verifyAllBlocks,
-    transitionToPhase,
-    onComplete,
-  ]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tick]); // Tick drives the animation loop - other deps are stable refs
 
   // Continuous receipt generation during offline phases
   useEffect(() => {

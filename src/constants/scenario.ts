@@ -158,7 +158,7 @@ export function createInitialScenarioState(): ScenarioState {
     chainBlocks: [],
     offlineReceiptCount: 0,
     syncedReceiptCount: 0,
-    dronePosition: { x: 50, y: 180, rotation: 45 },
+    dronePosition: { x: 80, y: 200, rotation: 45 }, // Starts at FLIGHT_PATH[0]
     threat: null,
     avoidancePath: [],
   };
