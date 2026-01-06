@@ -142,21 +142,27 @@ export function Affidavit({
     <div className="fixed inset-0 z-50 pointer-events-none">
       {/* Semi-transparent backdrop - dims the map behind */}
       <div
-        className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 ${showContent ? 'opacity-100' : 'opacity-0'}`}
+        className={`pointer-events-auto transition-opacity duration-500 ${showContent ? 'opacity-100' : 'opacity-0'}`}
         style={{
-          background: 'rgba(0, 0, 0, 0.7)',
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
           backdropFilter: 'blur(4px)',
+          zIndex: 999,
         }}
       />
 
       {/* Centered Modal - overlays the map */}
       <div
-        className={`pointer-events-auto transition-all duration-500 ${showContent ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+        className={`pointer-events-auto transition-all duration-500 ${showContent ? 'opacity-100' : 'opacity-0'}`}
         style={{
           position: 'fixed',
           top: '50%',
           left: '50%',
-          transform: 'translate(-50%, -50%)',
+          transform: showContent ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -50%) scale(0.95)',
           backgroundColor: '#0f0f0f',
           border: '1px solid rgba(255, 255, 255, 0.1)',
           borderRadius: '8px',
@@ -165,6 +171,7 @@ export function Affidavit({
           maxHeight: '80vh',
           overflowY: 'auto',
           boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5), 0 0 80px rgba(255, 255, 255, 0.02)',
+          zIndex: 1000,
         }}
       >
         {/* Document Content */}
