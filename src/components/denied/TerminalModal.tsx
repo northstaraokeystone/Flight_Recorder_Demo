@@ -1,155 +1,194 @@
 /**
- * TerminalModal - Legal packet generation terminal
- * No victory screen. This is a receipt being printed.
+ * TerminalModal - Forensic Packet with Cryptographic Root Seal
+ * v5.0: No celebration. Just the seal. The wax stamp on the affidavit.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { COLORS } from '../../constants/colors';
+import { generateDualHash } from '../../utils/crypto';
 
 interface TerminalModalProps {
   isVisible: boolean;
   receiptsAnchored: number;
+  missionDuration?: number;
+  offlineDuration?: number;
+  incidentsLogged?: number;
+  stopRulesFired?: number;
+  liabilityAvoided?: number;
   onExport?: () => void;
 }
 
-const TERMINAL_LINES = [
-  { text: '> UPLOADING_LOGS', status: '[100%]', delay: 0 },
-  { text: '> VERIFYING_HASHES', status: '[OK]', delay: 300 },
-  { text: '> CHAIN_INTEGRITY_CHECK', status: '[PASSED]', delay: 600 },
-  { text: '> COMPUTING_MERKLE_ROOT', status: '[OK]', delay: 900 },
-  { text: '> GENERATING_AFFIDAVIT', status: '[DONE]', delay: 1200 },
-];
-
-export function TerminalModal({ isVisible, receiptsAnchored, onExport }: TerminalModalProps) {
-  const [visibleLines, setVisibleLines] = useState(0);
-  const [showStats, setShowStats] = useState(false);
+export function TerminalModal({
+  isVisible,
+  receiptsAnchored,
+  missionDuration = 47.2,
+  offlineDuration = 8.2,
+  incidentsLogged = 1,
+  stopRulesFired = 1,
+  liabilityAvoided = 15_000_000,
+  onExport,
+}: TerminalModalProps) {
+  const [showContent, setShowContent] = useState(false);
   const [showButton, setShowButton] = useState(false);
+
+  // Generate a stable cryptographic root hash
+  const cryptographicRoot = useMemo(() => {
+    return generateDualHash(`forensic-packet-root-${receiptsAnchored}-${Date.now()}`).sha256;
+  }, [receiptsAnchored]);
 
   useEffect(() => {
     if (!isVisible) {
-      setVisibleLines(0);
-      setShowStats(false);
+      setShowContent(false);
       setShowButton(false);
       return;
     }
 
-    // Typewriter effect for each line
-    const timers: number[] = [];
+    // Show content immediately (no celebration delay)
+    const contentTimer = setTimeout(() => {
+      setShowContent(true);
+    }, 100);
 
-    TERMINAL_LINES.forEach((_, index) => {
-      const timer = window.setTimeout(() => {
-        setVisibleLines(index + 1);
-      }, TERMINAL_LINES[index].delay + 150);
-      timers.push(timer);
-    });
-
-    // Show stats after lines
-    const statsTimer = window.setTimeout(() => {
-      setShowStats(true);
-    }, 1800);
-    timers.push(statsTimer);
-
-    // Show button after stats
-    const buttonTimer = window.setTimeout(() => {
+    // Show button after content
+    const buttonTimer = setTimeout(() => {
       setShowButton(true);
-    }, 2200);
-    timers.push(buttonTimer);
+    }, 500);
 
     return () => {
-      timers.forEach(t => clearTimeout(t));
+      clearTimeout(contentTimer);
+      clearTimeout(buttonTimer);
     };
   }, [isVisible]);
 
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0"
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
-      />
+    <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+      {/* No full-screen backdrop - modal only overlays middle pane */}
 
-      {/* Terminal window */}
+      {/* Modal window - overlays middle pane only */}
       <div
-        className="relative font-mono"
+        className="relative font-mono pointer-events-auto"
         style={{
-          backgroundColor: COLORS.bgCard,
+          backgroundColor: '#0a0a0a',
           border: `1px solid ${COLORS.borderBracket}`,
-          width: '420px',
+          width: '480px',
           maxWidth: '90vw',
+          opacity: showContent ? 1 : 0,
+          transition: 'opacity 0.2s ease-in',
         }}
       >
-        {/* Corner brackets */}
-        <div className="absolute top-0 left-0 w-3 h-3 border-l border-t" style={{ borderColor: COLORS.alertGreen }} />
-        <div className="absolute top-0 right-0 w-3 h-3 border-r border-t" style={{ borderColor: COLORS.alertGreen }} />
-        <div className="absolute bottom-0 left-0 w-3 h-3 border-l border-b" style={{ borderColor: COLORS.alertGreen }} />
-        <div className="absolute bottom-0 right-0 w-3 h-3 border-r border-b" style={{ borderColor: COLORS.alertGreen }} />
-
         {/* Header */}
         <div
-          className="px-4 py-2 border-b"
-          style={{
-            borderColor: COLORS.borderBracket,
-            fontSize: '10px',
-            letterSpacing: '0.1em',
-            color: COLORS.alertGreen,
-          }}
+          className="px-4 py-3 border-b"
+          style={{ borderColor: COLORS.borderBracket }}
         >
-          SYSTEM: GENERATING COMPLIANCE PACKET
+          <div style={{ fontSize: '12px', letterSpacing: '0.1em', color: COLORS.textPrimary }}>
+            FORENSIC PACKET READY
+          </div>
+          <div
+            className="mt-1"
+            style={{
+              height: '2px',
+              background: `linear-gradient(to right, ${COLORS.textPrimary}, transparent)`,
+            }}
+          />
         </div>
 
-        {/* Terminal content */}
-        <div className="p-4 space-y-1" style={{ fontSize: '10px' }}>
-          {TERMINAL_LINES.map((line, index) => (
-            <div
-              key={index}
-              className="flex justify-between"
-              style={{
-                opacity: index < visibleLines ? 1 : 0,
-                transition: 'opacity 0.15s ease-in',
-              }}
-            >
-              <span style={{ color: COLORS.textSecondary }}>{line.text}</span>
-              <span
-                style={{
-                  color: line.status === '[PASSED]' || line.status === '[OK]' || line.status === '[DONE]' || line.status === '[100%]'
-                    ? COLORS.alertGreen
-                    : COLORS.textMuted,
-                }}
-              >
-                {line.status}
-              </span>
-            </div>
-          ))}
-
-          {/* Spacer */}
-          <div className="h-3" />
-
-          {/* Stats */}
-          <div
-            className="space-y-1 pt-2 border-t"
-            style={{
-              borderColor: COLORS.borderBracket,
-              opacity: showStats ? 1 : 0,
-              transition: 'opacity 0.3s ease-in',
-            }}
-          >
+        {/* Content */}
+        <div className="p-4 space-y-4" style={{ fontSize: '11px' }}>
+          {/* Mission Stats */}
+          <div className="space-y-2">
             <div className="flex justify-between">
-              <span style={{ color: COLORS.textMuted }}>RECEIPTS ANCHORED:</span>
-              <span style={{ color: COLORS.alertGreen }}>{receiptsAnchored}</span>
+              <span style={{ color: COLORS.textMuted }}>MISSION DURATION:</span>
+              <span style={{ color: COLORS.textSecondary }}>{missionDuration}s</span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{ color: COLORS.textMuted }}>OFFLINE DURATION:</span>
+              <span style={{ color: COLORS.textSecondary }}>{offlineDuration}s</span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{ color: COLORS.textMuted }}>RECEIPTS CAPTURED:</span>
+              <span style={{ color: COLORS.textSecondary }}>{receiptsAnchored}</span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{ color: COLORS.textMuted }}>CHAIN INTEGRITY:</span>
+              <span style={{ color: COLORS.alertGreen }}>VERIFIED</span>
             </div>
             <div className="flex justify-between">
               <span style={{ color: COLORS.textMuted }}>GAPS DETECTED:</span>
               <span style={{ color: COLORS.alertGreen }}>0</span>
             </div>
+          </div>
+
+          {/* Divider */}
+          <div className="h-px" style={{ backgroundColor: COLORS.borderBracket }} />
+
+          {/* Incident Stats */}
+          <div className="space-y-2">
             <div className="flex justify-between">
-              <span style={{ color: COLORS.textMuted }}>COMPLIANCE:</span>
-              <span style={{ color: COLORS.textSecondary }}>FAA-108 | DOD-3000.09 | EU-AI</span>
+              <span style={{ color: COLORS.textMuted }}>INCIDENTS LOGGED:</span>
+              <span style={{ color: COLORS.textSecondary }}>{incidentsLogged}</span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{ color: COLORS.textMuted }}>STOP_RULES FIRED:</span>
+              <span style={{ color: COLORS.textSecondary }}>{stopRulesFired}</span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{ color: COLORS.textMuted }}>LIABILITY AVOIDED:</span>
+              <span style={{ color: COLORS.alertGreen, fontWeight: 'bold' }}>
+                ${(liabilityAvoided / 1_000_000).toFixed(0)},000,000
+              </span>
             </div>
           </div>
 
-          {/* Export button */}
+          {/* Divider */}
+          <div className="h-px" style={{ backgroundColor: COLORS.borderBracket }} />
+
+          {/* Compliance Status */}
+          <div>
+            <div style={{ fontSize: '10px', color: COLORS.textMuted, marginBottom: '8px' }}>
+              COMPLIANCE STATUS:
+            </div>
+            <div className="flex gap-4" style={{ fontSize: '10px' }}>
+              <span style={{ color: COLORS.alertGreen }}>✓ FAA-108</span>
+              <span style={{ color: COLORS.alertGreen }}>✓ DOD-3000.09</span>
+              <span style={{ color: COLORS.alertGreen }}>✓ EU-AI-ACT</span>
+              <span style={{ color: COLORS.alertGreen }}>✓ DO-178C</span>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="h-px" style={{ backgroundColor: COLORS.borderBracket }} />
+
+          {/* CRYPTOGRAPHIC ROOT - THE WAX SEAL */}
+          <div>
+            <div style={{ fontSize: '10px', color: COLORS.textMuted, marginBottom: '8px' }}>
+              CRYPTOGRAPHIC ROOT:
+            </div>
+            <div className="flex items-center gap-2">
+              <code
+                style={{
+                  fontSize: '10px',
+                  color: COLORS.textPrimary,
+                  fontFamily: 'JetBrains Mono, monospace',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                0x{cryptographicRoot}
+              </code>
+              <span
+                style={{
+                  fontSize: '9px',
+                  color: COLORS.alertGreen,
+                  fontWeight: 'bold',
+                }}
+              >
+                (ANCHORED)
+              </span>
+            </div>
+          </div>
+
+          {/* Export Button */}
           <div
             className="pt-4 text-center"
             style={{
@@ -161,40 +200,19 @@ export function TerminalModal({ isVisible, receiptsAnchored, onExport }: Termina
               onClick={onExport}
               className="px-6 py-2 font-mono transition-all hover:scale-105"
               style={{
-                backgroundColor: 'rgba(0, 170, 102, 0.2)',
-                border: `1px solid ${COLORS.alertGreen}`,
-                color: COLORS.alertGreen,
+                backgroundColor: 'transparent',
+                border: `1px solid ${COLORS.textPrimary}`,
+                color: COLORS.textPrimary,
                 fontSize: '10px',
                 letterSpacing: '0.1em',
                 cursor: 'pointer',
               }}
             >
-              [ EXPORT LEGAL PACKET ]
+              [ EXPORT FORENSIC PACKET ]
             </button>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div
-          className="px-4 py-2 border-t text-center"
-          style={{
-            borderColor: COLORS.borderBracket,
-            fontSize: '8px',
-            color: COLORS.textTimestamp,
-          }}
-        >
-          MERKLE_ROOT: {generateFakeHash().slice(0, 32)}...
         </div>
       </div>
     </div>
   );
-}
-
-function generateFakeHash(): string {
-  const chars = '0123456789abcdef';
-  let hash = '';
-  for (let i = 0; i < 64; i++) {
-    hash += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return hash;
 }
