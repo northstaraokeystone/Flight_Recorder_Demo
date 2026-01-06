@@ -388,7 +388,10 @@ export function TacticalGrid({
             </text>
           </g>
 
-          {/* Future path - very dim, scaled for zoom */}
+          {/* Future path - HIDDEN for "Quiet Sky" doctrine */}
+          {/* CLEAN SKY FIX: Hide waypoint-to-waypoint lines ahead of drone to reduce visual clutter */}
+          {/* The planned path is intentionally hidden during flight - only the traveled path is shown */}
+          {/* Original code preserved for reference:
           {futurePathD && (
             <path
               d={futurePathD}
@@ -399,6 +402,7 @@ export function TacticalGrid({
               opacity="0.4"
             />
           )}
+          */}
 
           {/* Completed path - dim slate, scaled for zoom */}
           {completedPathD && (
@@ -603,9 +607,10 @@ export function TacticalGrid({
           <svg width="300" height="200" style={{ overflow: 'visible' }}>
             {/* Leader line from drone position to callout */}
             {/* QUIET SKY: Consistent colors - #F87171 red for errors, #FBBF24 amber for corrections */}
+            {/* FIX: Vector origin now starts at drone position (270, 180) instead of (220, 130) */}
             <line
-              x1="220"
-              y1="130"
+              x1="270"
+              y1="180"
               x2="150"
               y2="100"
               stroke={activeCallout.severity === 'critical' ? '#F87171' : '#FBBF24'}
