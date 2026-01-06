@@ -9,3 +9,4 @@ export { TamperingConsole } from './TamperingConsole';
 export { Rejection } from './Rejection';
 export { Comparison } from './Comparison';
 export { Close } from './Close';
+export { DeniedEnvironment } from './DeniedEnvironment';
