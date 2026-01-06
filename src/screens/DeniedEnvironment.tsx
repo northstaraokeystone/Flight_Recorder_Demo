@@ -349,9 +349,11 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         setGovernance(prev => ({ ...prev, confidence: 0.98 }));
 
         // Start the seal sequence after 2 seconds
+        // Map stays visible (dimmed by affidavit backdrop) for immersion
         setTimeout(() => {
           setDemoPhase('SEAL');
-          setMapOpacity(0);
+          // Keep map visible - the affidavit backdrop will dim it
+          setMapOpacity(0.6);
           setTimeout(() => {
             setShowMerkleRoot(true);
           }, 2000);
@@ -993,8 +995,8 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         <div
           className="absolute inset-0 z-40 flex flex-col items-center justify-center"
           style={{
-            backgroundColor: 'rgba(9, 9, 11, 0.95)',
-            backdropFilter: showMerkleRoot ? 'blur(8px)' : 'none',
+            backgroundColor: 'rgba(9, 9, 11, 0.7)',
+            backdropFilter: showMerkleRoot ? 'blur(4px)' : 'none',
             transition: 'backdrop-filter 1.5s ease-in-out',
           }}
         >

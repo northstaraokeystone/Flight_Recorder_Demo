@@ -140,42 +140,35 @@ export function Affidavit({
 
   return (
     <div className="fixed inset-0 z-50 pointer-events-none">
-      {/* Semi-transparent backdrop - darker at top, map still visible */}
+      {/* Semi-transparent backdrop - dims the map behind */}
       <div
-        className="absolute inset-0 pointer-events-auto"
+        className={`absolute inset-0 pointer-events-auto transition-opacity duration-500 ${showContent ? 'opacity-100' : 'opacity-0'}`}
         style={{
-          background: 'linear-gradient(to bottom, rgba(9, 9, 11, 0.3) 0%, rgba(9, 9, 11, 0.85) 100%)',
+          background: 'rgba(0, 0, 0, 0.7)',
+          backdropFilter: 'blur(4px)',
         }}
       />
 
-      {/* Bottom Sheet - max 50vh to NEVER cover drone at 40% */}
+      {/* Centered Modal - overlays the map */}
       <div
-        className={`absolute bottom-0 left-0 right-0 pointer-events-auto ${showContent ? 'animate-slideUp' : 'opacity-0 translate-y-full'}`}
+        className={`pointer-events-auto transition-all duration-500 ${showContent ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
         style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
           backgroundColor: '#0f0f0f',
-          borderTop: `1px solid rgba(255, 255, 255, 0.1)`,
-          borderTopLeftRadius: '16px',
-          borderTopRightRadius: '16px',
-          maxHeight: '50vh',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '8px',
+          maxWidth: '600px',
+          width: '90%',
+          maxHeight: '80vh',
           overflowY: 'auto',
-          boxShadow: '0 0 40px rgba(255, 255, 255, 0.05), 0 0 80px rgba(255, 255, 255, 0.02)',
+          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5), 0 0 80px rgba(255, 255, 255, 0.02)',
         }}
       >
-        {/* Handle bar */}
-        <div className="flex justify-center pt-3 pb-2">
-          <div
-            style={{
-              width: '40px',
-              height: '4px',
-              backgroundColor: COLORS.textTimestamp,
-              borderRadius: '2px',
-              opacity: 0.5,
-            }}
-          />
-        </div>
-
         {/* Document Content */}
-        <div className="px-8 pb-6 pt-2">
+        <div className="px-8 py-6">
           {/* Title - Merriweather serif, 18px, bold */}
           <div className="text-center mb-5">
             <h1
