@@ -1,15 +1,16 @@
 /**
- * CryptographicLedger - The Truth (Middle Pane)
- * v5.0: Every log entry has a cryptographic fingerprint
- * Hash colors: Grey (synced) -> AMBER (offline) -> GREEN (verified)
- * Ripple effect on burst sync
+ * CryptographicLedger - Terminal Style Event Log
+ * v2.2 DIAMOND: Block IDs, Reason Codes, Hash references
+ *
+ * Format: [BLOCK 47] | 10:30:00 | EVENT_TYPE | REASON_CODE | 0x9a7f...
  */
 
 import { useEffect, useRef, useState } from 'react';
-import type { ScenarioPhase } from '../../constants/scenario';
+import type { ScenarioPhase, GovernanceLogEntry } from '../../constants/scenario';
 import { COLORS } from '../../constants/colors';
 import { generateDualHash } from '../../utils/crypto';
 
+// Legacy interface for backwards compatibility
 export interface LedgerEntry {
   id: number;
   timestamp: string;
@@ -20,20 +21,24 @@ export interface LedgerEntry {
   synced: boolean;
   verified: boolean;
   stopRule?: boolean;
+  reasonCode?: string;
+  blockId?: number;
 }
 
 interface CryptographicLedgerProps {
   entries: LedgerEntry[];
   phase: ScenarioPhase;
-  syncProgress: number; // 0-1 for ripple animation
+  syncProgress: number;
   isOffline: boolean;
+  governanceLog?: GovernanceLogEntry[];
 }
 
-function getHashColor(entry: LedgerEntry, isOffline: boolean): string {
-  if (entry.verified) return '#00aa66'; // Green - verified
-  if (entry.synced) return '#00aa66'; // Green - synced
-  if (entry.offline || isOffline) return '#ffaa00'; // Amber - pending
-  return '#555555'; // Grey - normal
+function getSeverityColor(eventType: string, isAlert: boolean): string {
+  if (isAlert) return COLORS.alertRed;
+  if (eventType.includes('UNCERTAINTY') || eventType.includes('CRAG')) return COLORS.alertRed;
+  if (eventType.includes('RACI_HANDOFF')) return COLORS.textPrimary;
+  if (eventType.includes('RESPONSE') || eventType.includes('COMPLETE')) return COLORS.textSecondary;
+  return COLORS.textSecondary;
 }
 
 export function CryptographicLedger({
@@ -41,6 +46,7 @@ export function CryptographicLedger({
   phase,
   syncProgress,
   isOffline,
+  governanceLog = [],
 }: CryptographicLedgerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [rippleIndex, setRippleIndex] = useState(-1);
@@ -50,38 +56,35 @@ export function CryptographicLedger({
     if (containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  }, [entries]);
+  }, [entries, governanceLog]);
 
-  // Handle ripple animation during burst sync
+  // Handle ripple animation during verification phases
   useEffect(() => {
-    if (phase === 'BURST_SYNC') {
-      const entriesCount = entries.length;
-      const targetIndex = Math.floor(syncProgress * entriesCount);
+    if (phase === 'BURST_SYNC' || phase === 'VERIFIED') {
+      const totalEntries = governanceLog.length || entries.length;
+      const targetIndex = Math.floor(syncProgress * totalEntries);
       setRippleIndex(targetIndex);
-    } else if (phase === 'VERIFIED' || phase === 'COMPLETE') {
-      setRippleIndex(entries.length);
+    } else if (phase === 'MISSION_COMPLETE' || phase === 'COMPLETE') {
+      setRippleIndex(governanceLog.length || entries.length);
     } else {
       setRippleIndex(-1);
     }
-  }, [phase, syncProgress, entries.length]);
+  }, [phase, syncProgress, entries.length, governanceLog.length]);
 
   const getModeText = () => {
-    if (phase === 'VERIFIED' || phase === 'COMPLETE') return 'CLOUD_SYNC';
-    if (isOffline) return 'LOCAL_FIDUCIARY (OFFLINE)';
-    return 'CLOUD_SYNC';
+    if (phase === 'AFFIDAVIT' || phase === 'TRUST_GAP' || phase === 'MISSION_COMPLETE') return 'VERIFIED';
+    if (isOffline) return 'BUFFERING';
+    return 'LIVE';
   };
 
-  const getChainText = () => {
-    if (phase === 'VERIFIED' || phase === 'COMPLETE') return 'NOMINAL';
-    if (isOffline) return 'BUFFERING';
-    return 'NOMINAL';
-  };
+  // Use governanceLog if available, otherwise fall back to entries
+  const displayEntries = governanceLog.length > 0 ? governanceLog : entries;
 
   return (
     <div
       className="relative flex flex-col h-full font-mono"
       style={{
-        backgroundColor: '#0d0d0d',
+        backgroundColor: COLORS.bgElevated,
         border: `1px solid ${COLORS.borderBracket}`,
       }}
     >
@@ -94,29 +97,27 @@ export function CryptographicLedger({
         }}
       >
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <span style={{ fontSize: '10px', letterSpacing: '0.1em', color: COLORS.textPrimary }}>
-              CRYPTOGRAPHIC LEDGER
-            </span>
-            <span
-              className="px-1.5 py-0.5"
-              style={{
-                fontSize: '8px',
-                backgroundColor: isOffline ? 'rgba(255, 170, 0, 0.2)' : 'rgba(0, 170, 102, 0.2)',
-                color: isOffline ? COLORS.alertAmber : COLORS.alertGreen,
-                border: `1px solid ${isOffline ? COLORS.alertAmber : COLORS.alertGreen}`,
-              }}
-            >
-              {isOffline ? 'OFFLINE' : 'LIVE'}
-            </span>
-          </div>
-          <span style={{ fontSize: '9px', color: COLORS.textMuted }}>
-            ENTRIES: {entries.length}
+          <span
+            style={{
+              fontSize: '11px',
+              fontWeight: 500,
+              letterSpacing: '0.05em',
+              color: COLORS.textMuted,
+            }}
+          >
+            EVENT LOG
           </span>
-        </div>
-        <div className="flex justify-between mt-1" style={{ fontSize: '8px', color: COLORS.textMuted }}>
-          <span>MODE: <span style={{ color: isOffline ? COLORS.alertAmber : COLORS.textSecondary }}>{getModeText()}</span></span>
-          <span>CHAIN: <span style={{ color: phase === 'VERIFIED' ? COLORS.alertGreen : COLORS.textSecondary }}>{getChainText()}</span></span>
+          <span
+            className="px-2 py-0.5"
+            style={{
+              fontSize: '9px',
+              color: isOffline ? COLORS.alertRed : COLORS.textDim,
+              border: `1px solid ${isOffline ? COLORS.alertRed : COLORS.borderBracket}`,
+              backgroundColor: isOffline ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
+            }}
+          >
+            {getModeText()}
+          </span>
         </div>
       </div>
 
@@ -125,76 +126,117 @@ export function CryptographicLedger({
         className="flex px-3 py-1 border-b"
         style={{
           borderColor: COLORS.borderBracket,
-          fontSize: '10px',
-          color: COLORS.textMuted,
-          letterSpacing: '0.05em',
+          fontSize: '9px',
+          color: COLORS.textTimestamp,
+          letterSpacing: '0.02em',
         }}
       >
+        <div style={{ width: '12%' }}>BLOCK</div>
         <div style={{ width: '15%' }}>TIME</div>
-        <div style={{ width: '15%' }}>HASH</div>
-        <div style={{ width: '40%' }}>EVENT</div>
-        <div style={{ width: '30%' }}>RESULT</div>
+        <div style={{ width: '35%' }}>EVENT</div>
+        <div style={{ width: '20%' }}>CODE</div>
+        <div style={{ width: '18%' }}>HASH</div>
       </div>
 
       {/* Log entries */}
       <div
         ref={containerRef}
         className="flex-1 overflow-y-auto px-3 py-1"
-        style={{ fontSize: '11px', lineHeight: '1.8' }}
+        style={{ fontSize: '10px', lineHeight: '1.6' }}
       >
-        {entries.length === 0 ? (
-          <div className="text-center py-4 animate-pulse" style={{ color: COLORS.textMuted }}>
+        {displayEntries.length === 0 ? (
+          <div
+            className="text-center py-4"
+            style={{ color: COLORS.textTimestamp, fontSize: '10px' }}
+          >
             AWAITING EVENTS...
           </div>
         ) : (
-          entries.map((entry, index) => {
-            const isRippling = phase === 'BURST_SYNC' && index <= rippleIndex;
-            const isVerified = phase === 'VERIFIED' || phase === 'COMPLETE';
-            const hashColor = isVerified ? '#00aa66' : isRippling ? '#00aa66' : getHashColor(entry, isOffline);
+          displayEntries.map((entry, index) => {
+            const isGovEntry = 'blockId' in entry && 'detail' in entry;
+            const blockId = isGovEntry ? (entry as GovernanceLogEntry).blockId : (entry as LedgerEntry).blockId || index + 1;
+            const timestamp = isGovEntry ? (entry as GovernanceLogEntry).timestamp : (entry as LedgerEntry).timestamp;
+            const eventType = isGovEntry ? (entry as GovernanceLogEntry).eventType : (entry as LedgerEntry).eventType;
+            const detail = isGovEntry ? (entry as GovernanceLogEntry).detail : (entry as LedgerEntry).result;
+            const reasonCode = isGovEntry ? (entry as GovernanceLogEntry).reasonCode : (entry as LedgerEntry).reasonCode;
+            const hash = isGovEntry ? (entry as GovernanceLogEntry).hash : (entry as LedgerEntry).hash;
+
+            const isRippled = index <= rippleIndex;
+            const isAlert = eventType.includes('UNCERTAINTY') ||
+              eventType.includes('CRAG') ||
+              !!(entry as LedgerEntry).stopRule;
+            const eventColor = getSeverityColor(eventType, !!isAlert);
 
             return (
               <div
-                key={entry.id}
-                className="flex items-center whitespace-nowrap"
+                key={index}
+                className="flex items-center whitespace-nowrap py-0.5"
                 style={{
                   animation: 'fadeIn 0.15s ease-in',
-                  borderBottom: entry.stopRule ? `1px solid ${COLORS.alertGreen}` : 'none',
-                  backgroundColor: entry.stopRule ? 'rgba(0, 170, 102, 0.1)' : 'transparent',
-                  padding: entry.stopRule ? '2px 0' : '0',
+                  borderLeft: isAlert ? `2px solid ${COLORS.alertRed}` : 'none',
+                  paddingLeft: isAlert ? '4px' : '0',
+                  marginLeft: isAlert ? '-4px' : '0',
                 }}
               >
-                {/* Time */}
-                <div style={{ width: '15%', color: COLORS.textTimestamp, fontSize: '10px' }}>
-                  {entry.timestamp}
+                {/* Block ID */}
+                <div
+                  style={{
+                    width: '12%',
+                    color: isRippled ? COLORS.textMuted : COLORS.textTimestamp,
+                    transition: 'color 0.3s',
+                  }}
+                >
+                  [{blockId.toString().padStart(2, '0')}]
                 </div>
 
-                {/* Hash - with color transition */}
+                {/* Timestamp */}
                 <div
                   style={{
                     width: '15%',
-                    color: hashColor,
-                    fontSize: '10px',
-                    transition: 'color 0.3s ease-in-out',
+                    color: COLORS.textTimestamp,
                   }}
                 >
-                  0x{entry.hash.slice(0, 4)}...
+                  {timestamp}
                 </div>
 
-                {/* Event */}
-                <div style={{ width: '40%', color: COLORS.textSecondary }}>
-                  {entry.eventType}
-                </div>
-
-                {/* Result */}
+                {/* Event Type */}
                 <div
                   style={{
-                    width: '30%',
-                    color: entry.stopRule ? COLORS.alertGreen : COLORS.textPrimary,
-                    fontWeight: entry.stopRule ? 'bold' : 'normal',
+                    width: '35%',
+                    color: eventColor,
+                    fontWeight: isAlert ? 500 : 400,
                   }}
                 >
-                  {entry.stopRule && <span style={{ marginRight: '4px' }}>🔒</span>}
-                  {entry.result}
+                  {eventType}
+                  {detail && (
+                    <span style={{ color: COLORS.textDim, marginLeft: '4px' }}>
+                      {detail.length > 15 ? `${detail.slice(0, 15)}...` : detail}
+                    </span>
+                  )}
+                </div>
+
+                {/* Reason Code */}
+                <div
+                  style={{
+                    width: '20%',
+                    color: reasonCode ? COLORS.alertRed : COLORS.textTimestamp,
+                    fontSize: '9px',
+                  }}
+                >
+                  {reasonCode || '—'}
+                </div>
+
+                {/* Hash */}
+                <div
+                  style={{
+                    width: '18%',
+                    color: isRippled ? COLORS.textMuted : COLORS.textHash,
+                    fontFamily: 'monospace',
+                    fontSize: '9px',
+                    transition: 'color 0.3s',
+                  }}
+                >
+                  0x{hash?.slice(0, 4)}...
                 </div>
               </div>
             );
@@ -204,18 +246,16 @@ export function CryptographicLedger({
 
       {/* Footer */}
       <div
-        className="px-3 py-1 border-t flex justify-between"
+        className="px-3 py-1.5 border-t flex justify-between"
         style={{
           borderColor: COLORS.borderBracket,
-          fontSize: '8px',
+          fontSize: '9px',
           color: COLORS.textTimestamp,
         }}
       >
+        <span>BLOCKS: {displayEntries.length}</span>
         <span>
-          {phase === 'BURST_SYNC' ? `SYNCING: ${Math.round(syncProgress * 100)}%` : 'READY'}
-        </span>
-        <span>
-          INTEGRITY: {phase === 'VERIFIED' || phase === 'COMPLETE' ? '100%' : isOffline ? 'PENDING' : '100%'}
+          CHAIN: {phase === 'AFFIDAVIT' || phase === 'MISSION_COMPLETE' ? 'VERIFIED' : 'ACTIVE'}
         </span>
       </div>
     </div>
@@ -229,7 +269,8 @@ export function createLedgerEntry(
   eventType: string,
   result: string,
   offline: boolean,
-  stopRule?: boolean
+  stopRule?: boolean,
+  reasonCode?: string
 ): LedgerEntry {
   return {
     id,
@@ -241,5 +282,27 @@ export function createLedgerEntry(
     synced: !offline,
     verified: false,
     stopRule,
+    reasonCode,
+    blockId: id,
+  };
+}
+
+// Helper to create governance log entry
+export function createGovernanceLogEntry(
+  blockId: number,
+  timestamp: string,
+  eventType: string,
+  detail: string,
+  reasonCode: string | null = null,
+  severity: 'INFO' | 'WARN' | 'CRITICAL' | 'SUCCESS' = 'INFO'
+): GovernanceLogEntry {
+  return {
+    blockId,
+    timestamp,
+    eventType: eventType as any,
+    detail,
+    reasonCode: reasonCode as any,
+    hash: generateDualHash(`gov-${blockId}-${Date.now()}`).sha256,
+    severity,
   };
 }

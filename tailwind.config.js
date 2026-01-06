@@ -7,54 +7,62 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Backgrounds (Anduril/Shield AI palette)
-        'bg-primary': '#0a0f1a',
-        'bg-card': '#0d1424',
-        'bg-elevated': '#111827',
-        'bg-grid': '#1a1a2e',
+        // Stealth Backgrounds - Pure black
+        'bg-primary': '#09090b',    // zinc-950
+        'bg-card': '#0a0a0a',
+        'bg-elevated': '#0d0d0d',
 
-        // Primary Accent
-        'accent': '#00d4ff',
-        'accent-dim': '#0094b3',
+        // Slate palette - the only accent colors
+        'slate-950': '#09090b',
+        'slate-900': '#0f172a',
+        'slate-800': '#1e293b',
+        'slate-700': '#334155',
+        'slate-600': '#475569',
+        'slate-500': '#64748b',
+        'slate-400': '#94a3b8',
+        'slate-300': '#cbd5e1',
+        'slate-200': '#E2E8F0',
+        'slate-100': '#f1f5f9',
+        'slate-50': '#F8FAFC',
 
-        // Status Colors
-        'status-online': '#00d4ff',
-        'status-degraded': '#ffaa00',
-        'status-offline': '#cc3333',
-        'status-success': '#00aa66',
+        // Alert - RED only
+        'alert-red': '#ef4444',
 
-        // Alert/Risk
-        'alert-red': '#cc3333',
-        'alert-amber': '#ffaa00',
-        'alert-green': '#00aa66',
-
-        // Zones
-        'zone-green': '#00aa66',
-        'zone-grey': '#4a5568',
-        'zone-red': '#cc3333',
-
-        // Legacy gate colors
-        'gate-green': '#00aa66',
-        'gate-yellow': '#ffaa00',
-        'gate-red': '#cc3333',
+        // Legacy compatibility (mapped to stealth)
+        'accent': '#64748b',        // Was cyan, now slate-500
+        'accent-dim': '#475569',    // Slate-600
+        'status-online': '#64748b', // Was cyan, now slate
+        'status-degraded': '#f59e0b',
+        'status-offline': '#ef4444',
+        'status-success': '#64748b', // Was green, now slate
       },
       fontFamily: {
-        'mono': ['JetBrains Mono', 'Roboto Mono', 'SF Mono', 'monospace'],
-        'tactical': ['JetBrains Mono', 'Roboto Mono', 'SF Mono', 'monospace'],
+        'mono': ['Inter', 'JetBrains Mono', 'Roboto Mono', 'SF Mono', 'monospace'],
+        'serif': ['Merriweather', 'Georgia', 'serif'],
+        'tactical': ['Inter', 'JetBrains Mono', 'monospace'],
+      },
+      fontSize: {
+        'instrument': '10px',
+        'instrument-sm': '8px',
+        'instrument-lg': '12px',
       },
       boxShadow: {
-        'danger-glow': '0 0 30px rgba(204, 51, 51, 0.3)',
-        'success-glow': '0 0 30px rgba(0, 170, 102, 0.3)',
-        'accent-glow': '0 0 30px rgba(0, 212, 255, 0.3)',
+        'none': 'none',
+        'danger-glow': '0 0 20px rgba(239, 68, 68, 0.2)',
       },
       animation: {
         'pulse-subtle': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'slide-right': 'slideRight 0.5s linear infinite',
+        'slide-up': 'slideUp 400ms ease-out forwards',
+        'fade-in': 'fadeIn 300ms ease-out forwards',
       },
       keyframes: {
-        slideRight: {
-          from: { transform: 'translateX(-100%)', opacity: '0.3' },
-          to: { transform: 'translateX(100%)', opacity: '0' },
+        slideUp: {
+          from: { transform: 'translateY(100%)', opacity: '0' },
+          to: { transform: 'translateY(0)', opacity: '1' },
+        },
+        fadeIn: {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
         },
       },
     },

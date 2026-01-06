@@ -1,26 +1,63 @@
 /**
- * Denied Environment Scenario Configuration
- * All timing and scenario parameters in one place
+ * Governance Scenario Configuration v2.2 DIAMOND
+ * CRAG Fallback / RACI Handoff Narrative
+ *
+ * The story: AI detects uncertainty → asks for help → human responds → liability is clear
  */
 
-// Phase timing (milliseconds)
-export const TIMING = {
-  PHASE_NORMAL_OPS_DURATION: 8000,      // 8 seconds - normal flight
-  PHASE_DEGRADED_DURATION: 4000,        // 4 seconds - signal degrading
-  PHASE_OFFLINE_DURATION: 23000,        // 23 seconds - in dead zone
-  PHASE_INCIDENT_DURATION: 4000,        // 4 seconds - detection & avoidance
-  PHASE_RECONNECT_DURATION: 5000,       // 5 seconds - exiting dead zone
-  PHASE_BURST_SYNC_DURATION: 5000,      // 5 seconds - sync animation
-  PHASE_FINAL_HOLD_DURATION: 5000,      // 5 seconds - hold success state
+import type { RACIState, ModeState, CRAGState, ReasonCode } from './colors';
 
-  RECEIPT_TICK_INTERVAL: 300,           // New receipt every 300ms while offline
-  BURST_SYNC_SPEED: 50,                 // 50ms per receipt during sync animation
-  DECISION_LOG_INTERVAL: 1500,          // New log entry every 1.5s during offline
+// Phase timing (milliseconds) with strategic pauses
+export const TIMING = {
+  // Phase durations
+  PHASE_TAKEOFF_DURATION: 2000,         // 2s - takeoff
+  PHASE_NORMAL_OPS_DURATION: 10000,     // 10s - normal flight, confidence high
+  PHASE_WAYPOINT_DURATION: 3000,        // 3s per waypoint
+  PHASE_UNCERTAINTY_PAUSE: 1500,        // 1.5s pause before uncertainty event
+  PHASE_UNCERTAINTY_DURATION: 2000,     // 2s - AI detects unknown object
+  PHASE_CRAG_TRIGGERED_DURATION: 1000,  // 1s - CRAG activating
+  PHASE_HUMAN_QUERY_PAUSE: 2000,        // 2s THE KEY PAUSE - system waiting for human
+  PHASE_HUMAN_RESPONSE_DURATION: 1500,  // 1.5s - human responds
+  PHASE_HANDOFF_BACK_DURATION: 1000,    // 1s - RACI returns to AI
+  PHASE_ROUTE_RESUME_DURATION: 3000,    // 3s - resume original route
+  PHASE_COMPLETE_DURATION: 2000,        // 2s - mission complete
+  PHASE_AFFIDAVIT_PAUSE: 1500,          // 1.5s before affidavit slides up
+
+  // Intervals
+  RECEIPT_TICK_INTERVAL: 300,           // New receipt every 300ms
+  LOG_ENTRY_INTERVAL: 800,              // Log entries during normal ops
+  DECISION_LOG_INTERVAL: 1500,          // Decisions during uncertainty
+
+  // Legacy timing compatibility
+  PHASE_DEGRADED_DURATION: 4000,
+  PHASE_OFFLINE_DURATION: 8000,
+  PHASE_INCIDENT_DURATION: 4000,
+  PHASE_RECONNECT_DURATION: 5000,
+  PHASE_BURST_SYNC_DURATION: 5000,
+  PHASE_FINAL_HOLD_DURATION: 5000,
+  BURST_SYNC_SPEED: 50,
+
+  // Confidence thresholds
+  CONFIDENCE_DROP_THRESHOLD: 0.62,      // When CRAG is triggered
+  CONFIDENCE_RESTORED: 0.94,            // After human confirmation
 } as const;
 
-// Scenario phases
+// Scenario phases - governance-focused narrative
 export type ScenarioPhase =
+  | 'TAKEOFF'
   | 'NORMAL_OPS'
+  | 'WAYPOINT_1'
+  | 'WAYPOINT_2'
+  | 'UNCERTAINTY_DETECTED'
+  | 'CRAG_TRIGGERED'
+  | 'HUMAN_QUERY'
+  | 'HUMAN_RESPONSE'
+  | 'RACI_HANDOFF_BACK'
+  | 'ROUTE_RESUMED'
+  | 'MISSION_COMPLETE'
+  | 'AFFIDAVIT'
+  | 'TRUST_GAP'
+  // Legacy phases for compatibility
   | 'DEGRADED'
   | 'OFFLINE'
   | 'INCIDENT_DETECTED'
@@ -37,24 +74,43 @@ export type LinkStatus = 'OPTIMAL' | 'DEGRADED' | 'SEVERED' | 'RESTORED';
 // Protocol mode
 export type ProtocolMode = 'CLOUD_SYNC' | 'AUTONOMOUS_FIDUCIARY';
 
-// Compliance standard states
-export type ComplianceState = 'READY' | 'COMPLIANT' | 'MONITORING' | 'ACTIVE' | 'LOGGING' | 'LOCAL_CAPTURE' | 'VERIFIED' | 'CHAIN_INTACT' | 'EXCEEDED';
-
-// Decision log event types
-export type DecisionEventType =
+// Governance event types for logging
+export type GovernanceEventType =
+  | 'WAYPOINT_ACHIEVED'
   | 'WAYPOINT_LOCKED'
-  | 'COMMS_STATUS'
-  | 'PROTOCOL'
-  | 'OBSTACLE_DETECTED'
-  | 'RACI_CHECK'
-  | 'STOP_RULE'
-  | 'MANEUVER'
-  | 'BURST_SYNC'
-  | 'CHAIN_INTEGRITY';
+  | 'CONFIDENCE_UPDATE'
+  | 'UNCERTAINTY_DETECTED'
+  | 'CRAG_FALLBACK_TRIGGERED'
+  | 'EXTERNAL_QUERY'
+  | 'GROUND_CONTROL_RESPONSE'
+  | 'RACI_HANDOFF'
+  | 'ROUTE_RESUMED'
+  | 'MISSION_COMPLETE'
+  | 'SENSOR_FUSION'
+  | 'TELEMETRY_LOG'
+  | 'POSITION_FIX'
+  | 'LINK_STATUS'
+  | 'MODE_SWITCH'
+  | 'CHAIN_VERIFY';
 
-export type DecisionSeverity = 'INFO' | 'WARN' | 'CRITICAL' | 'SUCCESS';
+export type EventSeverity = 'INFO' | 'WARN' | 'CRITICAL' | 'SUCCESS';
 
-// Decision log entry
+// Legacy type alias
+export type DecisionEventType = GovernanceEventType;
+export type DecisionSeverity = EventSeverity;
+
+// Governance log entry with block IDs and reason codes
+export interface GovernanceLogEntry {
+  blockId: number;
+  timestamp: string;
+  eventType: GovernanceEventType;
+  detail: string;
+  reasonCode: ReasonCode | null;
+  hash: string;
+  severity: EventSeverity;
+}
+
+// Legacy log entry interface
 export interface DecisionLogEntry {
   timestamp: string;
   eventType: DecisionEventType;
@@ -71,12 +127,14 @@ export interface LinkState {
   since: number;
 }
 
-// ROI ticker state
-export interface ROIState {
-  liabilityExposure: number;
-  decisionsSecured: number;
-  riskMitigated: number;
-  incidentActive: boolean;
+// Governance state for the panel
+export interface GovernanceDisplayState {
+  raci: RACIState;
+  confidence: number;
+  mode: ModeState;
+  crag: CRAGState;
+  fallback: 'NONE' | 'TRIGGERED';
+  reasonCode: string | null;
 }
 
 // Chain block for visualization
@@ -88,23 +146,25 @@ export interface ChainBlock {
   timestamp: number;
 }
 
-// Compliance status for each standard
-export interface ComplianceStatus {
-  faa108: ComplianceState;
-  dod300009: ComplianceState;
-  euAiAct: ComplianceState;
-  do178c?: ComplianceState;
-  assureA55?: ComplianceState;
-}
-
 // Drone position on map
 export interface DronePosition {
   x: number;
   y: number;
-  rotation: number; // degrees
+  rotation: number;
 }
 
-// Threat/obstacle data
+// Unknown object data (replaces ThreatData)
+export interface UnknownObject {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  detected: boolean;
+  identified: boolean;
+  identifiedAs?: string;
+}
+
+// Legacy interface
 export interface ThreatData {
   id: string;
   label: string;
@@ -114,19 +174,44 @@ export interface ThreatData {
   avoided: boolean;
 }
 
+// ROI ticker state
+export interface ROIState {
+  liabilityExposure: number;
+  decisionsSecured: number;
+  riskMitigated: number;
+  incidentActive: boolean;
+}
+
+// Compliance types
+export type ComplianceState = 'READY' | 'COMPLIANT' | 'MONITORING' | 'ACTIVE' | 'LOGGING' | 'LOCAL_CAPTURE' | 'VERIFIED' | 'CHAIN_INTACT' | 'EXCEEDED';
+
+export interface ComplianceStatus {
+  faa108: ComplianceState;
+  dod300009: ComplianceState;
+  euAiAct: ComplianceState;
+  do178c?: ComplianceState;
+  assureA55?: ComplianceState;
+}
+
 // Full scenario state
 export interface ScenarioState {
   phase: ScenarioPhase;
   phaseStartTime: number;
   elapsedTime: number;
   link: LinkState;
+  governance: GovernanceDisplayState;
+  governanceLog: GovernanceLogEntry[];
+  chainBlocks: ChainBlock[];
+  dronePosition: DronePosition;
+  unknownObject: UnknownObject | null;
+  currentWaypoint: number;
+  totalWaypoints: number;
+  // Legacy fields for compatibility
   roi: ROIState;
   compliance: ComplianceStatus;
   decisionLog: DecisionLogEntry[];
-  chainBlocks: ChainBlock[];
   offlineReceiptCount: number;
   syncedReceiptCount: number;
-  dronePosition: DronePosition;
   threat: ThreatData | null;
   avoidancePath: { x: number; y: number }[];
 }
@@ -134,7 +219,7 @@ export interface ScenarioState {
 // Initial state factory
 export function createInitialScenarioState(): ScenarioState {
   return {
-    phase: 'NORMAL_OPS',
+    phase: 'TAKEOFF',
     phaseStartTime: Date.now(),
     elapsedTime: 0,
     link: {
@@ -143,6 +228,21 @@ export function createInitialScenarioState(): ScenarioState {
       protocol: 'CLOUD_SYNC',
       since: Date.now(),
     },
+    governance: {
+      raci: 'AI_SYSTEM',
+      confidence: 0.99,
+      mode: 'AUTONOMOUS',
+      crag: 'STANDBY',
+      fallback: 'NONE',
+      reasonCode: null,
+    },
+    governanceLog: [],
+    chainBlocks: [],
+    dronePosition: { x: 80, y: 200, rotation: 45 },
+    unknownObject: null,
+    currentWaypoint: 0,
+    totalWaypoints: 5,
+    // Legacy fields
     roi: {
       liabilityExposure: 0,
       decisionsSecured: 0,
@@ -155,16 +255,14 @@ export function createInitialScenarioState(): ScenarioState {
       euAiAct: 'LOGGING',
     },
     decisionLog: [],
-    chainBlocks: [],
     offlineReceiptCount: 0,
     syncedReceiptCount: 0,
-    dronePosition: { x: 80, y: 200, rotation: 45 }, // Starts at FLIGHT_PATH[0]
     threat: null,
     avoidancePath: [],
   };
 }
 
-// Zone definitions for the map
+// Zone definitions for the map (stealth aesthetic)
 export const MAP_ZONES = {
   green: {
     label: 'FLIGHT CORRIDOR',
@@ -174,14 +272,14 @@ export const MAP_ZONES = {
     height: 160,
   },
   grey: {
-    label: 'COMMS DEAD ZONE',
+    label: 'UNCERTAINTY ZONE',
     x: 200,
     y: 80,
     width: 180,
     height: 200,
   },
   red: {
-    label: 'LIABILITY ZONE',
+    label: 'DESTINATION',
     x: 410,
     y: 100,
     width: 120,
@@ -191,21 +289,24 @@ export const MAP_ZONES = {
 
 // Flight path waypoints
 export const FLIGHT_PATH = [
-  { x: 80, y: 200, phase: 'NORMAL_OPS' as const },
-  { x: 130, y: 170, phase: 'NORMAL_OPS' as const },
-  { x: 180, y: 160, phase: 'DEGRADED' as const },
-  { x: 240, y: 150, phase: 'OFFLINE' as const },
-  { x: 300, y: 140, phase: 'OFFLINE' as const },
-  { x: 350, y: 135, phase: 'INCIDENT_DETECTED' as const },
-  // Avoidance curve (generated dynamically)
-  { x: 340, y: 170, phase: 'AVOIDANCE_EXECUTED' as const },
-  { x: 320, y: 200, phase: 'RECONNECTING' as const },
-  { x: 280, y: 220, phase: 'RECONNECTING' as const },
-  { x: 230, y: 230, phase: 'BURST_SYNC' as const },
-  { x: 180, y: 220, phase: 'VERIFIED' as const },
+  { x: 80, y: 200, label: 'TAKEOFF', phase: 'TAKEOFF' as const },
+  { x: 130, y: 170, label: 'WPT_1', phase: 'WAYPOINT_1' as const },
+  { x: 180, y: 160, label: 'WPT_2', phase: 'WAYPOINT_2' as const },
+  { x: 240, y: 150, label: 'WPT_3', phase: 'NORMAL_OPS' as const },
+  { x: 300, y: 145, label: 'WPT_4', phase: 'NORMAL_OPS' as const },
+  { x: 350, y: 140, label: 'WPT_5', phase: 'ROUTE_RESUMED' as const },
+  { x: 420, y: 145, label: 'DEST', phase: 'MISSION_COMPLETE' as const },
 ] as const;
 
-// Threat location (school bus)
+// Unknown object location (triggers CRAG)
+export const UNKNOWN_OBJECT_LOCATION = {
+  id: 'UNK_OBJ_01',
+  label: 'UNKNOWN OBJECT',
+  x: 270,
+  y: 145,
+};
+
+// Legacy compatibility
 export const THREAT_LOCATION = {
   id: 'LIAB_TARGET_01',
   label: 'OBSTACLE_DETECTED',
@@ -213,9 +314,41 @@ export const THREAT_LOCATION = {
   y: 145,
 };
 
+// Key narrative moments
+export const NARRATIVE_EVENTS = {
+  UNCERTAINTY_DETECTED: {
+    message: 'Unidentified obstacle in flight path',
+    reasonCode: 'RC006_CONTEXT_MISSING' as const,
+  },
+  CRAG_QUERY: {
+    message: 'Ground Control - Obstacle identification requested',
+  },
+  HUMAN_RESPONSE: {
+    message: 'Proceed - Bird flock, not threat',
+    identifiedAs: 'BIRD_FLOCK',
+  },
+  RACI_HANDOFF_TO_HUMAN: {
+    from: 'AI_SYSTEM' as const,
+    to: 'HUMAN_IN_LOOP' as const,
+  },
+  RACI_HANDOFF_TO_AI: {
+    from: 'HUMAN_IN_LOOP' as const,
+    to: 'AI_SYSTEM' as const,
+  },
+} as const;
+
+// Affidavit data
+export const AFFIDAVIT_DATA = {
+  missionId: 'FLT-2026-0105-0847',
+  aircraft: 'UAV-ALPHA-7',
+  operator: 'Northstar AO',
+  raciCompliance: 100,
+  liabilityStatus: 'SHARED' as const,
+} as const;
+
 // Money shot values
 export const MONEY_SHOTS = {
-  LIABILITY_EXPOSURE: 15_000_000, // $15M
+  LIABILITY_EXPOSURE: 15_000_000,
   DECISIONS_AT_INCIDENT: 78,
   FINAL_RECEIPTS_SYNCED: 142,
 } as const;
