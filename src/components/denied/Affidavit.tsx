@@ -1,17 +1,15 @@
 /**
- * Affidavit - Court-Admissible Flight Integrity Document
- * v3.1 DEAL-KILLER REMEDIATION
+ * Affidavit - "Golden Ticket" Certificate Display
+ * v4.0 SIMPLIFIED LAYOUT
  *
- * FIXED:
- * - max-height: 50vh (never cover drone at 40%)
- * - Text sizes increased for projector readability
- * - Minting animation: hash types out live
- * - onRestart instead of onDismiss (demo ends here)
- * - Digital seal with verification mark
+ * DESIGN PHILOSOPHY:
+ * - Certificate, not CVS receipt
+ * - Only 4-5 essential data items visible
+ * - Celebratory "victory moment" feel
+ * - NO UUIDs, NO RACI stats, NO reason codes
  */
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { COLORS } from '../../constants/colors';
 import { generateDualHash } from '../../utils/crypto';
 
 interface AffidavitProps {
@@ -40,84 +38,52 @@ interface AffidavitProps {
 export function Affidavit({
   isVisible,
   missionId = 'FLT-2026-0105-0847',
-  aircraft = 'UAV-ALPHA-7',
-  operator = 'Northstar AO',
-  waypointsCompleted,
-  waypointsTotal,
   flightTime,
-  anomaliesDetected,
-  anomaliesResolved,
-  raciHandoffs,
-  raciCompliance,
-  cragResolutions,
-  reasonCodesApplied,
-  humanOverrideEvents,
-  humanOverrideDetails,
-  liabilityStatus,
-  regulatoryTrigger,
   blocks,
-  receipts,
   onRestart,
 }: AffidavitProps) {
   const [showContent, setShowContent] = useState(false);
   const [mintingPhase, setMintingPhase] = useState<'generating' | 'typing' | 'complete'>('generating');
-  const [typedMerkle, setTypedMerkle] = useState('');
-  const [typedChain, setTypedChain] = useState('');
-  const [timestamp, setTimestamp] = useState(new Date());
+  const [typedHash, setTypedHash] = useState('');
   const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Generate cryptographic proofs
+  // Generate cryptographic proof - truncated for display
   const merkleRoot = useMemo(() => {
     return generateDualHash(`merkle-root-${missionId}-${Date.now()}`).sha256;
   }, [missionId]);
 
-  const chainRoot = useMemo(() => {
-    return generateDualHash(`chain-root-${missionId}-${Date.now()}`).blake3;
-  }, [missionId]);
-
-  // Timestamp ticker
-  useEffect(() => {
-    if (!isVisible || mintingPhase !== 'complete') return;
-    const interval = setInterval(() => {
-      setTimestamp(new Date());
-    }, 100);
-    return () => clearInterval(interval);
-  }, [isVisible, mintingPhase]);
+  // Truncated hash for display (first 16 chars)
+  const displayHash = merkleRoot.slice(0, 16);
 
   // Minting animation sequence
   useEffect(() => {
     if (!isVisible) {
       setShowContent(false);
       setMintingPhase('generating');
-      setTypedMerkle('');
-      setTypedChain('');
+      setTypedHash('');
       return;
     }
 
     // Phase 1: Show content after small delay
     const showTimer = setTimeout(() => setShowContent(true), 100);
 
-    // Phase 2: Start typing after 1 second
+    // Phase 2: Start typing after 800ms
     const typingStartTimer = setTimeout(() => {
       setMintingPhase('typing');
-      let merkleIdx = 0;
-      let chainIdx = 0;
+      let idx = 0;
 
       typingIntervalRef.current = setInterval(() => {
-        if (merkleIdx < merkleRoot.length) {
-          setTypedMerkle(merkleRoot.slice(0, merkleIdx + 1));
-          merkleIdx++;
-        } else if (chainIdx < chainRoot.length) {
-          setTypedChain(chainRoot.slice(0, chainIdx + 1));
-          chainIdx++;
+        if (idx < displayHash.length) {
+          setTypedHash(displayHash.slice(0, idx + 1));
+          idx++;
         } else {
           if (typingIntervalRef.current) {
             clearInterval(typingIntervalRef.current);
           }
           setMintingPhase('complete');
         }
-      }, 25); // Fast typing, 25ms per character
-    }, 1000);
+      }, 40); // Typing speed
+    }, 800);
 
     return () => {
       clearTimeout(showTimer);
@@ -126,36 +92,25 @@ export function Affidavit({
         clearInterval(typingIntervalRef.current);
       }
     };
-  }, [isVisible, merkleRoot, chainRoot]);
+  }, [isVisible, displayHash]);
 
   if (!isVisible) return null;
 
-  const today = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-
-  const timestampStr = timestamp.toISOString();
-
   return (
     <div className="fixed inset-0 z-50 pointer-events-none">
-      {/* Semi-transparent backdrop - dims the map behind */}
+      {/* Backdrop - dims the map behind (80% opacity per spec) */}
       <div
         className={`pointer-events-auto transition-opacity duration-500 ${showContent ? 'opacity-100' : 'opacity-0'}`}
         style={{
           position: 'fixed',
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0,
-          background: 'rgba(0, 0, 0, 0.75)',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
           backdropFilter: 'blur(4px)',
           zIndex: 999,
         }}
       />
 
-      {/* Centered Modal - overlays the map */}
+      {/* Centered Modal - "Golden Ticket" */}
       <div
         className={`pointer-events-auto transition-all duration-500 ${showContent ? 'opacity-100' : 'opacity-0'}`}
         style={{
@@ -165,287 +120,175 @@ export function Affidavit({
           transform: showContent ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -50%) scale(0.95)',
           backgroundColor: '#0f0f0f',
           border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '8px',
-          maxWidth: '600px',
-          width: '90%',
+          borderRadius: '12px',
+          width: '500px',
+          maxWidth: '90vw',
           maxHeight: '80vh',
           overflowY: 'auto',
-          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5), 0 0 80px rgba(255, 255, 255, 0.02)',
+          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
           zIndex: 1000,
+          padding: '40px',
+          textAlign: 'center',
         }}
       >
-        {/* Document Content */}
-        <div className="px-8 py-6">
-          {/* Title - Merriweather serif, 18px, bold */}
-          <div className="text-center mb-5">
-            <h1
-              style={{
-                fontFamily: "'Merriweather', serif",
-                fontSize: '18px',
-                fontWeight: 700,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: '#F8FAFC',
-                marginBottom: '8px',
-              }}
-            >
-              AFFIDAVIT OF FLIGHT INTEGRITY
-            </h1>
-            <div
-              className="h-px mx-auto"
-              style={{
-                width: '320px',
-                background: `linear-gradient(to right, transparent, ${COLORS.textMuted}, transparent)`,
-              }}
-            />
+        {/* ===== HERO: MISSION INTEGRITY STATUS ===== */}
+        <div style={{ marginBottom: '24px' }}>
+          <h1
+            style={{
+              fontSize: '32px',
+              fontWeight: 700,
+              color: '#10B981',
+              letterSpacing: '0.05em',
+              marginBottom: '8px',
+              fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+            }}
+          >
+            MISSION INTEGRITY: VERIFIED
+          </h1>
+        </div>
+
+        {/* Divider */}
+        <div
+          style={{
+            height: '1px',
+            background: 'rgba(255, 255, 255, 0.1)',
+            width: '80%',
+            margin: '0 auto 24px auto',
+          }}
+        />
+
+        {/* ===== KEY METRICS ===== */}
+        <div style={{ marginBottom: '24px' }}>
+          <div
+            style={{
+              fontSize: '18px',
+              fontWeight: 500,
+              color: '#F1F5F9',
+              marginBottom: '8px',
+              fontFamily: 'JetBrains Mono, monospace',
+            }}
+          >
+            FLIGHT TIME: {flightTime}
           </div>
-
-          {/* Minting Indicator */}
-          {mintingPhase === 'generating' && (
-            <div className="text-center mb-4 animate-pulse">
-              <span
-                style={{
-                  fontSize: '12px',
-                  fontFamily: 'JetBrains Mono, monospace',
-                  color: '#CBD5E1',
-                  letterSpacing: '0.1em',
-                }}
-              >
-                GENERATING PROOF...
-              </span>
-            </div>
-          )}
-
-          {/* Two-column grid for main info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-            {/* Left Column - Mission Info & Flight Summary */}
-            <div>
-              {/* Mission Info */}
-              <div className="mb-4">
-                <h2 style={{ fontSize: '12px', fontWeight: 600, color: '#CBD5E1', letterSpacing: '0.08em', marginBottom: '8px' }}>
-                  MISSION INFORMATION
-                </h2>
-                <div className="space-y-1" style={{ fontSize: '14px', fontWeight: 500, lineHeight: '1.8' }}>
-                  <div className="flex justify-between">
-                    <span style={{ color: '#94a3b8' }}>DATE:</span>
-                    <span style={{ color: '#F1F5F9' }}>{today}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span style={{ color: '#94a3b8' }}>MISSION ID:</span>
-                    <span style={{ color: '#F1F5F9', fontFamily: 'JetBrains Mono, monospace' }}>{missionId}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span style={{ color: '#94a3b8' }}>AIRCRAFT:</span>
-                    <span style={{ color: '#F1F5F9' }}>{aircraft}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span style={{ color: '#94a3b8' }}>OPERATOR:</span>
-                    <span style={{ color: '#F1F5F9' }}>{operator}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Flight Summary */}
-              <div>
-                <h2 style={{ fontSize: '12px', fontWeight: 600, color: '#CBD5E1', letterSpacing: '0.08em', marginBottom: '8px' }}>
-                  FLIGHT SUMMARY
-                </h2>
-                <div className="space-y-1" style={{ fontSize: '14px', fontWeight: 500, lineHeight: '1.8' }}>
-                  <div className="flex justify-between">
-                    <span style={{ color: '#94a3b8' }}>Waypoints:</span>
-                    <span style={{ color: '#F1F5F9' }}>{waypointsCompleted}/{waypointsTotal}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span style={{ color: '#94a3b8' }}>Flight Time:</span>
-                    <span style={{ color: '#F1F5F9', fontFamily: 'JetBrains Mono, monospace' }}>{flightTime}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span style={{ color: '#94a3b8' }}>Anomalies:</span>
-                    <span style={{ color: '#F1F5F9' }}>{anomaliesDetected} detected / {anomaliesResolved} resolved</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column - Governance & Liability */}
-            <div>
-              {/* Governance Compliance */}
-              <div className="mb-4">
-                <h2 style={{ fontSize: '12px', fontWeight: 600, color: '#CBD5E1', letterSpacing: '0.08em', marginBottom: '8px' }}>
-                  GOVERNANCE COMPLIANCE
-                </h2>
-                <div className="space-y-1" style={{ fontSize: '14px', fontWeight: 500, lineHeight: '1.8' }}>
-                  <div className="flex justify-between">
-                    <span style={{ color: '#94a3b8' }}>RACI Handoffs:</span>
-                    <span style={{ color: '#F1F5F9' }}>{raciHandoffs}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span style={{ color: '#94a3b8' }}>RACI Compliance:</span>
-                    <span style={{ color: '#F1F5F9' }}>{raciCompliance}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span style={{ color: '#94a3b8' }}>CRAG Resolutions:</span>
-                    <span style={{ color: '#F1F5F9' }}>{cragResolutions}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span style={{ color: '#94a3b8' }}>Reason Codes:</span>
-                    <span style={{ color: '#F1F5F9', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px' }}>
-                      {reasonCodesApplied.length > 0 ? reasonCodesApplied.join(', ') : 'NONE'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Liability Assessment */}
-              <div>
-                <h2 style={{ fontSize: '12px', fontWeight: 600, color: '#CBD5E1', letterSpacing: '0.08em', marginBottom: '8px' }}>
-                  LIABILITY ASSESSMENT
-                </h2>
-                <div className="space-y-1" style={{ fontSize: '14px', fontWeight: 500, lineHeight: '1.8' }}>
-                  <div className="flex justify-between">
-                    <span style={{ color: '#94a3b8' }}>Decision Chain:</span>
-                    <span style={{ color: '#F1F5F9', fontWeight: 700 }}>UNBROKEN</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span style={{ color: '#94a3b8' }}>Human Override:</span>
-                    <span style={{ color: '#F1F5F9' }}>
-                      {humanOverrideEvents}{humanOverrideDetails ? ` (${humanOverrideDetails})` : ''}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span style={{ color: '#94a3b8' }}>Liability Status:</span>
-                    <span style={{ color: '#F1F5F9', fontWeight: 700 }}>{liabilityStatus}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span style={{ color: '#94a3b8' }}>Regulatory Trigger:</span>
-                    <span style={{ color: '#F1F5F9' }}>{regulatoryTrigger || 'NULL'}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="h-px my-4" style={{ background: `linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent)` }} />
-
-          {/* Cryptographic Proof - MINTING ANIMATION */}
-          <div className="mb-4">
-            <h2 style={{ fontSize: '12px', fontWeight: 600, color: '#CBD5E1', letterSpacing: '0.08em', marginBottom: '8px' }}>
-              CRYPTOGRAPHIC PROOF
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-              <div>
-                <span style={{ color: '#94a3b8', display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 500 }}>MERKLE ROOT:</span>
-                <span
-                  style={{
-                    color: '#CBD5E1',
-                    wordBreak: 'break-all',
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    textShadow: mintingPhase === 'typing' ? '0 0 8px rgba(255,255,255,0.3)' : 'none',
-                  }}
-                >
-                  0x{mintingPhase === 'generating' ? '...' : typedMerkle}
-                  {mintingPhase === 'typing' && typedMerkle.length < merkleRoot.length && (
-                    <span className="animate-pulse">_</span>
-                  )}
-                </span>
-              </div>
-              <div>
-                <span style={{ color: '#94a3b8', display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 500 }}>CHAIN ROOT:</span>
-                <span
-                  style={{
-                    color: '#CBD5E1',
-                    wordBreak: 'break-all',
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    textShadow: mintingPhase === 'typing' && typedMerkle.length >= merkleRoot.length ? '0 0 8px rgba(255,255,255,0.3)' : 'none',
-                  }}
-                >
-                  0x{mintingPhase === 'generating' ? '...' : typedChain}
-                  {mintingPhase === 'typing' && typedMerkle.length >= merkleRoot.length && typedChain.length < chainRoot.length && (
-                    <span className="animate-pulse">_</span>
-                  )}
-                </span>
-              </div>
-            </div>
-            <div className="mt-3 flex gap-6" style={{ fontSize: '14px', fontWeight: 500 }}>
-              <span style={{ color: '#64748b' }}>BLOCKS: <span style={{ color: '#F1F5F9' }}>{blocks}</span></span>
-              <span style={{ color: '#64748b' }}>RECEIPTS: <span style={{ color: '#F1F5F9' }}>{receipts}</span></span>
-              {mintingPhase === 'complete' && (
-                <span style={{ color: '#64748b', fontFamily: 'JetBrains Mono, monospace', fontSize: '11px' }}>
-                  TS: {timestampStr.slice(11, 23)}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Digital Seal & Status */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-            {/* Status Badge */}
-            <div
-              className="px-5 py-3 flex items-center gap-3"
-              style={{
-                border: '1px solid rgba(255,255,255,0.15)',
-                borderRadius: '4px',
-                backgroundColor: 'rgba(16, 185, 129, 0.08)',
-              }}
-            >
-              {/* Checkmark seal */}
-              <div
-                style={{
-                  width: '20px',
-                  height: '20px',
-                  borderRadius: '50%',
-                  backgroundColor: '#10B981',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '12px',
-                  color: '#0f0f0f',
-                  fontWeight: 700,
-                }}
-              >
-                ✓
-              </div>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: 700, color: '#F1F5F9', letterSpacing: '0.05em' }}>
-                  CRYPTOGRAPHICALLY VERIFIED
-                </div>
-                <div style={{ fontSize: '11px', color: '#10B981', letterSpacing: '0.05em' }}>
-                  FAA Part 107/108 COMPLIANT
-                </div>
-              </div>
-            </div>
-
-            {/* Restart Button */}
-            <button
-              onClick={onRestart}
-              className="px-6 py-3"
-              style={{
-                backgroundColor: 'transparent',
-                border: '1px solid #64748b',
-                color: '#F1F5F9',
-                fontSize: '14px',
-                fontWeight: 600,
-                letterSpacing: '0.08em',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#F1F5F9';
-                e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#64748b';
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-            >
-              [ RESTART DEMO ]
-            </button>
+          <div
+            style={{
+              fontSize: '18px',
+              fontWeight: 500,
+              color: '#F1F5F9',
+              fontFamily: 'JetBrains Mono, monospace',
+            }}
+          >
+            BLOCKS ANCHORED: {blocks}
           </div>
         </div>
+
+        {/* Divider */}
+        <div
+          style={{
+            height: '1px',
+            background: 'rgba(255, 255, 255, 0.1)',
+            width: '80%',
+            margin: '0 auto 24px auto',
+          }}
+        />
+
+        {/* ===== CRYPTOGRAPHIC PROOF ===== */}
+        <div style={{ marginBottom: '24px' }}>
+          <div
+            style={{
+              fontSize: '12px',
+              fontWeight: 500,
+              color: '#94A3B8',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              marginBottom: '8px',
+            }}
+          >
+            CRYPTOGRAPHIC PROOF
+          </div>
+          <div
+            style={{
+              fontSize: '14px',
+              fontFamily: 'JetBrains Mono, SF Mono, Consolas, monospace',
+              color: '#94A3B8',
+              minHeight: '20px',
+            }}
+          >
+            {mintingPhase === 'generating' ? (
+              <span className="animate-pulse">generating...</span>
+            ) : (
+              <>
+                0x{typedHash}
+                {mintingPhase === 'typing' && <span className="animate-pulse">_</span>}
+                {mintingPhase === 'complete' && '...'}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ===== INTEGRITY SEAL ===== */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            marginBottom: '32px',
+          }}
+        >
+          <span
+            style={{
+              width: '20px',
+              height: '20px',
+              borderRadius: '50%',
+              backgroundColor: '#10B981',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '12px',
+              color: '#0f0f0f',
+              fontWeight: 700,
+            }}
+          >
+            ✓
+          </span>
+          <span
+            style={{
+              fontSize: '14px',
+              fontWeight: 500,
+              color: '#10B981',
+            }}
+          >
+            CHAIN INTEGRITY UNBROKEN
+          </span>
+        </div>
+
+        {/* ===== RESTART BUTTON ===== */}
+        <button
+          onClick={onRestart}
+          style={{
+            backgroundColor: 'transparent',
+            border: '1px solid #64748b',
+            color: '#F1F5F9',
+            fontSize: '14px',
+            fontWeight: 600,
+            letterSpacing: '0.08em',
+            borderRadius: '4px',
+            padding: '12px 24px',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#F1F5F9';
+            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = '#64748b';
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          RESTART DEMO
+        </button>
       </div>
     </div>
   );
