@@ -99,10 +99,11 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
   const [isMissionComplete, setIsMissionComplete] = useState(false);
 
   // BULLET TIME: Crisis pause state for dramatic effect
-  // When anomaly fires, simulation FREEZES for 3 seconds so viewer can read callout
+  // When anomaly fires, simulation FREEZES so viewer can read callout
+  // SF15 POLISH: Increased to 4.5 seconds for "distracted CFO" readability
   const [isCrisisPaused, setIsCrisisPaused] = useState(false);
   const crisisPauseStartRef = useRef<number | null>(null);
-  const CRISIS_PAUSE_DURATION = 3000; // 3 seconds - let the danger breathe
+  const CRISIS_PAUSE_DURATION = 4500; // 4.5 seconds - "distracted CFO" test passed
 
   // Timing refs
   const phaseStartRef = useRef(Date.now());
@@ -149,15 +150,15 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
   useEffect(() => {
     if (!autoplay) return;
 
-    // COCKPIT v1.0: Boot sequence per spec - 2s per phase, ~6-7s total
-    // Phase 1: "INITIALIZING PROOF SYSTEM..." - 2000ms (fade in 300ms, hold, fade out 300ms)
-    // Phase 2: "ESTABLISHING SECURE LINK..." - 2000ms
-    // Phase 3: "SYSTEM LIVE" + "● ONLINE" - 2000ms
+    // SF15 POLISH: Boot sequence with +20% pacing (2.4s per phase, ~8.4s total)
+    // Phase 1: "INITIALIZING PROOF SYSTEM..." - 2400ms (was 2000ms)
+    // Phase 2: "ESTABLISHING SECURE LINK..." - 2400ms (was 2000ms)
+    // Phase 3: "SYSTEM LIVE" + "● ONLINE" - 2400ms (was 2000ms)
     const bootSteps = [
-      { time: 0, text: '', progress: 0 },                                    // T-7.0s: BLACK
-      { time: 500, text: 'INITIALIZING PROOF SYSTEM...', progress: 25 },     // T-6.5s: Phase 1
-      { time: 2500, text: 'ESTABLISHING SECURE LINK...', progress: 50 },     // T-4.5s: Phase 2
-      { time: 4500, text: 'SYSTEM LIVE', progress: 100 },                    // T-2.5s: Phase 3
+      { time: 0, text: '', progress: 0 },                                    // T-8.4s: BLACK
+      { time: 600, text: 'INITIALIZING PROOF SYSTEM...', progress: 25 },     // T-7.8s: Phase 1 (+20%)
+      { time: 3000, text: 'ESTABLISHING SECURE LINK...', progress: 50 },     // T-5.4s: Phase 2 (+20%)
+      { time: 5400, text: 'SYSTEM LIVE', progress: 100 },                    // T-3.0s: Phase 3 (+20%)
     ];
 
     bootSteps.forEach(step => {
@@ -167,24 +168,24 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       }, step.time);
     });
 
-    // Grid fades in at T-1.5s
+    // Grid fades in at T-1.8s (+20%)
     setTimeout(() => {
       setMapOpacity(0.5); // Start fading in
-    }, 5500);
+    }, 6600);
 
-    // Drone appears at T-0.5s, full opacity
+    // Drone appears at T-0.6s, full opacity (+20%)
     setTimeout(() => {
       setMapOpacity(1);
-    }, 6500);
+    }, 7800);
 
-    // Transition to running at T+0.0s (7 second intro total)
+    // Transition to running at T+0.0s (8.4 second intro total, +20%)
     setTimeout(() => {
       setDemoPhase('RUNNING');
       startTimeRef.current = Date.now();
       phaseStartRef.current = Date.now();
       setIsRunning(true);
       transitionToPhase('TAKEOFF');
-    }, 7000);
+    }, 8400);
   }, [autoplay]);
 
   // Phase transition logic
@@ -501,12 +502,12 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
     setIsCrisisPaused(false);
     crisisPauseStartRef.current = null;
 
-    // COCKPIT v1.0: Restart boot sequence - 7 second intro (2s per phase)
+    // SF15 POLISH: Restart boot sequence - 8.4 second intro (+20% pacing)
     const bootSteps = [
       { time: 0, text: '', progress: 0 },
-      { time: 500, text: 'INITIALIZING PROOF SYSTEM...', progress: 25 },
-      { time: 2500, text: 'ESTABLISHING SECURE LINK...', progress: 50 },
-      { time: 4500, text: 'SYSTEM LIVE', progress: 100 },
+      { time: 600, text: 'INITIALIZING PROOF SYSTEM...', progress: 25 },
+      { time: 3000, text: 'ESTABLISHING SECURE LINK...', progress: 50 },
+      { time: 5400, text: 'SYSTEM LIVE', progress: 100 },
     ];
 
     bootSteps.forEach(step => {
@@ -516,14 +517,14 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       }, step.time);
     });
 
-    // Grid fades in
+    // Grid fades in (+20%)
     setTimeout(() => {
       setMapOpacity(0.5);
-    }, 5500);
+    }, 6600);
 
     setTimeout(() => {
       setMapOpacity(1);
-    }, 6500);
+    }, 7800);
 
     setTimeout(() => {
       setDemoPhase('RUNNING');
@@ -532,7 +533,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       lastTickRef.current = Date.now();
       setIsRunning(true);
       transitionToPhase('TAKEOFF');
-    }, 7000);
+    }, 8400);
   }, [transitionToPhase]);
 
   // Calculate flight time for affidavit
@@ -658,6 +659,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
 
       {/* ===== COCKPIT v1.0: HUD GAUGES - Bottom-center, fighter jet style ===== */}
       {/* LAYOUT FIX: Meters moved from TOP to BOTTOM CENTER per Cockpit Protocol */}
+      {/* SF15 POLISH: FOCUS MODE - dims to 50% during crisis */}
       {demoPhase === 'RUNNING' && (
         <div
           className="z-40"
@@ -674,8 +676,9 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
             display: 'flex',
             gap: '32px',
             alignItems: 'center',
-            opacity: 0.8,  // COCKPIT: 0.8 normal, 1.0 on change
-            transition: 'opacity 0.3s ease',
+            // SF15 FOCUS MODE: Dim to 50% during crisis, 80% normal
+            opacity: isCrisisPaused ? 0.5 : 0.8,
+            transition: 'opacity 0.5s ease-out',
           }}
         >
           {/* CONFIDENCE Gauge */}
@@ -804,6 +807,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       {/* ===== COCKPIT v1.0: LEFT EDGE Terminal - Event Stream ===== */}
       {/* LAYOUT FIX: Terminal moved from BOTTOM CENTER to LEFT EDGE per Cockpit Protocol */}
       {/* "Out of primary focus - proof it's logging, not meant to be read in real-time" */}
+      {/* SF15 POLISH: FOCUS MODE - dims to 30% during crisis for "one focus point" */}
       {demoPhase === 'RUNNING' && (
         <div
           className="z-30"
@@ -817,10 +821,13 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
             borderRight: '1px solid rgba(255, 255, 255, 0.05)',  // COCKPIT: Minimal border
             padding: '16px',
             overflow: 'hidden',
-            opacity: 0.7,          // COCKPIT: 0.6-0.7 "background process" feel
+            // SF15 FOCUS MODE: Dim to 30% during crisis, 70% normal
+            opacity: isCrisisPaused ? 0.3 : 0.7,
+            transition: 'opacity 0.5s ease-out',
           }}
         >
           {/* COCKPIT v1.0: Event stream - left-aligned, compact */}
+          {/* SF15 POLISH: Human-readable event names per "Clean Event Stream" directive */}
           <div
             className="flex flex-col h-full overflow-hidden"
             style={{
@@ -858,6 +865,25 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
                 {[...governanceLog].reverse().slice(0, 15).map((entry, idx) => {
                   const isCritical = entry.severity === 'CRITICAL';
                   const isWarning = entry.severity === 'WARN';
+                  const isSuccess = entry.severity === 'SUCCESS';
+
+                  // SF15 POLISH: Human-readable event name mapping
+                  // "If a CFO wouldn't understand it, rename it or remove it"
+                  const getDisplayName = (eventType: string): string => {
+                    const nameMap: Record<string, string> = {
+                      'WAYPOINT_ACHIEVED': '✓ WAYPOINT',
+                      'CONFIDENCE_UPDATE': 'CONFIDENCE',
+                      'UNCERTAINTY_DETECTED': '⚠ ANOMALY',
+                      'CRAG_FALLBACK_TRIGGERED': 'FALLBACK',
+                      'EXTERNAL_QUERY': 'GROUND_QUERY',
+                      'GROUND_CONTROL_RESPONSE': 'CTRL_RESPONSE',
+                      'RACI_HANDOFF': 'CONTROL_XFER',
+                      'ROUTE_RESUMED': '✓ ROUTE_OK',
+                      'MISSION_COMPLETE': '✓ COMPLETE',
+                      'CHAIN_VERIFY': '✓ VERIFIED',
+                    };
+                    return nameMap[eventType] || eventType;
+                  };
 
                   // COCKPIT: Entry fade effect - recent entries brighter
                   const opacityMap = [1.0, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35, 0.3];
@@ -889,9 +915,10 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
                         <span
                           style={{
                             fontSize: isCritical ? '13px' : '12px',
-                            fontWeight: isCritical ? 700 : 500,
+                            fontWeight: isCritical ? 700 : isSuccess ? 600 : 500,
                             color: isCritical ? '#F87171' :
                                    isWarning ? '#FBBF24' :
+                                   isSuccess ? '#10B981' :
                                    '#CBD5E1',
                             flex: 1,
                             overflow: 'hidden',
@@ -899,7 +926,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          {entry.eventType}
+                          {getDisplayName(entry.eventType)}
                           {entry.detail && (
                             <span style={{ color: '#94A3B8', marginLeft: '6px', fontSize: '11px' }}>
                               {entry.detail}
