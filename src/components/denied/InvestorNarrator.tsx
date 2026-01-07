@@ -36,10 +36,12 @@ interface InvestorNarratorProps {
 }
 
 // Callout configurations
+// SF15 POLISH: MONEY_SHOT increased to 5500ms for "distracted CFO" readability
+// 300ms fade in + 4700ms hold + 500ms fade out = ~5.5 seconds total visibility
 const CALLOUTS: Record<NarratorCalloutType, NarratorCallout> = {
   DIFFERENCE: { type: 'DIFFERENCE', duration: 4000, position: 'top-left' },
   BENCHMARK: { type: 'BENCHMARK', duration: 3000, position: 'top-center' },
-  MONEY_SHOT: { type: 'MONEY_SHOT', duration: 5000, position: 'bottom-center' },
+  MONEY_SHOT: { type: 'MONEY_SHOT', duration: 5500, position: 'bottom-center' },
   CLOSE: { type: 'CLOSE', duration: 4000, position: 'center' },
 };
 

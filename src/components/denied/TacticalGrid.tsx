@@ -17,7 +17,8 @@
 
 import { useMemo, useEffect, useState, useRef } from 'react';
 import type { DronePosition, ScenarioPhase, UnknownObject } from '../../constants/scenario';
-import { MAP_ZONES, FLIGHT_PATH, UNKNOWN_OBJECT_LOCATION } from '../../constants/scenario';
+// SF15 POLISH: MAP_ZONES removed - GPS_BOUNDS killed
+import { FLIGHT_PATH, UNKNOWN_OBJECT_LOCATION } from '../../constants/scenario';
 import { COLORS } from '../../constants/colors';
 
 interface TacticalGridProps {
@@ -66,7 +67,7 @@ export function TacticalGrid({
   currentWaypoint = 0,
   confidence = 0.99,
 }: TacticalGridProps) {
-  const [geofenceFlash, setGeofenceFlash] = useState(false);
+  // SF15 POLISH: geofenceFlash state removed - GPS_BOUNDS killed
   const lastPhaseRef = useRef(phase);
   // COCKPIT v1.0: Callout state removed - only investor narrator callouts remain
 
@@ -151,50 +152,16 @@ export function TacticalGrid({
     };
   }, [dronePosition.rotation, phase, isUncertaintyPhase]);
 
-  // Geofence flash animation when uncertainty is detected
+  // SF15 POLISH: Geofence flash effect removed - GPS_BOUNDS killed
+  // Phase tracking kept for future use if needed
   useEffect(() => {
-    if (phase === 'UNCERTAINTY_DETECTED' && lastPhaseRef.current !== 'UNCERTAINTY_DETECTED') {
-      setGeofenceFlash(true);
-      const flashInterval = setInterval(() => {
-        setGeofenceFlash(prev => !prev);
-      }, 300);
-
-      const timeout = setTimeout(() => {
-        clearInterval(flashInterval);
-        setGeofenceFlash(true);
-      }, 3000);
-
-      return () => {
-        clearInterval(flashInterval);
-        clearTimeout(timeout);
-      };
-    }
     lastPhaseRef.current = phase;
   }, [phase]);
 
   // COCKPIT v1.0: System callout timer removed - only investor narrator callouts remain
 
-  // Generate path string for completed trail (in world coords, will be transformed)
-  // Recalculates when drone moves (worldOffset changes) or waypoints are visited
-  const completedPathD = useMemo(() => {
-    const points = FLIGHT_PATH.slice(0, Math.min(visitedPathIndex + 1, FLIGHT_PATH.length));
-    if (points.length === 0) return '';
-    return points.reduce((acc, pt, i) => {
-      const screen = worldToScreen(pt.x, pt.y);
-      return acc + (i === 0 ? `M ${screen.x} ${screen.y}` : ` L ${screen.x} ${screen.y}`);
-    }, '');
-  }, [visitedPathIndex, worldOffset.x, worldOffset.y, CAMERA.ZOOM]);
-
-  // CLEAN SKY FIX: Future path calculation removed to reduce visual clutter
-  // The planned path ahead of drone is intentionally hidden for "quiet sky" effect
-
-  // Active segment from last waypoint to drone (drone is fixed at center)
-  const activeSegmentStart = useMemo(() => {
-    if (visitedPathIndex > 0 && visitedPathIndex < FLIGHT_PATH.length) {
-      return worldToScreen(FLIGHT_PATH[visitedPathIndex - 1].x, FLIGHT_PATH[visitedPathIndex - 1].y);
-    }
-    return null;
-  }, [visitedPathIndex, worldOffset.x, worldOffset.y, CAMERA.ZOOM]);
+  // SF15 POLISH: Path calculations removed - path vectors killed
+  // completedPathD and activeSegmentStart are no longer computed
 
   // Determine display state
   const showUnknownObject = unknownObject?.detected || isUncertaintyPhase;
@@ -203,13 +170,7 @@ export function TacticalGrid({
   // Transform unknown object location to screen coords
   const unknownObjScreen = worldToScreen(UNKNOWN_OBJECT_LOCATION.x, UNKNOWN_OBJECT_LOCATION.y);
 
-  // Transform geofence to screen coords with ZOOM
-  const geofenceScreen = {
-    x: MAP_ZONES.grey.x * CAMERA.ZOOM - worldOffset.x,
-    y: MAP_ZONES.grey.y * CAMERA.ZOOM - worldOffset.y,
-    width: MAP_ZONES.grey.width * CAMERA.ZOOM,
-    height: MAP_ZONES.grey.height * CAMERA.ZOOM,
-  };
+  // SF15 POLISH: Geofence screen coords removed - GPS_BOUNDS killed
 
   return (
     <div
@@ -326,36 +287,9 @@ export function TacticalGrid({
             />
           </g>
 
-          {/* COCKPIT v1.0: GPS Bounds - ONLY visible during uncertainty phase */}
-          {/* "Kill the Premature GPS_BOUNDS" - hide until drone approaches */}
-          {isUncertaintyPhase && (
-            <g style={{ opacity: geofenceFlash ? 0.8 : 0.6, transition: 'opacity 0.3s' }}>
-              <rect
-                x={geofenceScreen.x}
-                y={geofenceScreen.y}
-                width={geofenceScreen.width}
-                height={geofenceScreen.height}
-                fill="none"
-                stroke={geofenceFlash ? COLORS.alertRed : '#d97706'}
-                strokeWidth={3}
-                strokeDasharray="12 6"
-                style={{
-                  transition: 'stroke 0.15s',
-                }}
-              />
-              <text
-                x={geofenceScreen.x + 8}
-                y={geofenceScreen.y - 8}
-                style={{
-                  fontSize: '11px',
-                  fontFamily: 'JetBrains Mono, monospace',
-                  fill: geofenceFlash ? COLORS.alertRed : '#d97706',
-                }}
-              >
-                GPS BOUNDS
-              </text>
-            </g>
-          )}
+          {/* SF15 POLISH: GPS_BOUNDS BOX KILLED per "Kill GPS_BOUNDS" directive */}
+          {/* "might need to kill the dotted GPS bounds who cares about that" */}
+          {/* The orange dashed rectangle is REMOVED entirely */}
 
           {/* Future path - HIDDEN for "Quiet Sky" doctrine */}
           {/* CLEAN SKY FIX: Hide waypoint-to-waypoint lines ahead of drone to reduce visual clutter */}
@@ -373,51 +307,32 @@ export function TacticalGrid({
           )}
           */}
 
-          {/* Completed path - dim slate, scaled for zoom */}
-          {completedPathD && (
-            <path
-              d={completedPathD}
-              fill="none"
-              stroke={COLORS.flightPathInactive}
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          )}
+          {/* SF15 POLISH: PATH VECTORS KILLED per "Kill Path Vectors" directive */}
+          {/* "why do I have to see the flight's path vectors at all there's no value" */}
+          {/* Completed path - REMOVED */}
+          {/* Active segment - REMOVED */}
+          {/* Only anomaly vectors (red glow during crisis) remain visible */}
 
-          {/* Active segment - from last waypoint to drone center */}
-          {activeSegmentStart && (
-            <line
-              x1={activeSegmentStart.x}
-              y1={activeSegmentStart.y}
-              x2={DRONE_SCREEN_X}
-              y2={DRONE_SCREEN_Y}
-              stroke={COLORS.flightPathActive}
-              strokeWidth="4"
-              strokeLinecap="round"
-            />
-          )}
-
-          {/* COCKPIT v1.0: Waypoints - move with world, scaled for zoom */}
-          {/* "Kill the DEST Label Pre-Reveal" - labels only shown AFTER drone passes */}
+          {/* SF15 POLISH: Waypoints - LABELS KILLED per "Kill Label Overlap" directive */}
+          {/* "The drone is the only thing that needs a label. Waypoints are dots, not billboards." */}
           {FLIGHT_PATH.map((wp, i) => {
             const isCurrent = i === currentWaypoint;
             const isCompleted = i < visitedPathIndex;
             const isFuture = !isCurrent && !isCompleted;
             const screen = worldToScreen(wp.x, wp.y);
 
-            // COCKPIT: Future waypoints are nearly invisible small dots (6-8px)
-            // Gray for future, white for passed
-            const futureRadius = 6;
-            const futureOpacity = 0.25;
+            // SF15: Minimal waypoint dots only - no labels
+            // Future: tiny dots (4px), Current: subtle ring (8px), Completed: small dot (5px)
+            const radius = isCurrent ? 8 : isCompleted ? 5 : 4;
+            const opacity = isFuture ? 0.15 : isCompleted ? 0.4 : 0.8;
 
             return (
               <g key={i}>
                 <circle
                   cx={screen.x}
                   cy={screen.y}
-                  r={isCurrent ? 12 : isCompleted ? 8 : futureRadius}
-                  fill={isCurrent ? COLORS.waypointCurrent : 'none'}
+                  r={radius}
+                  fill={isCurrent ? 'none' : isCompleted ? COLORS.waypointCompleted : 'none'}
                   stroke={
                     isCurrent
                       ? COLORS.waypointCurrent
@@ -425,64 +340,41 @@ export function TacticalGrid({
                         ? COLORS.waypointCompleted
                         : COLORS.waypointFuture
                   }
-                  strokeWidth={isCurrent ? 3 : isCompleted ? 2 : 1}
-                  opacity={isFuture ? futureOpacity : 1}
+                  strokeWidth={isCurrent ? 2 : 1}
+                  opacity={opacity}
                   className={isCurrent ? 'animate-subtlePulse' : ''}
                 />
-                {/* COCKPIT v1.0: Labels only for current and completed waypoints */}
-                {/* "Hide DEST label until drone reaches final waypoint OR mission complete" */}
-                {!isFuture && (
-                  <text
-                    x={screen.x}
-                    y={screen.y - 18}
-                    textAnchor="middle"
-                    style={{
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      fontFamily: 'JetBrains Mono, monospace',
-                      fill: isCurrent
-                        ? COLORS.textSecondary
-                        : COLORS.textTimestamp,
-                    }}
-                  >
-                    {wp.label}
-                  </text>
-                )}
+                {/* SF15 POLISH: ALL WAYPOINT LABELS REMOVED */}
+                {/* "Waypoints are dots, not billboards" - TAKEOFF, WPT_1, WPT_2, DEST all hidden */}
               </g>
             );
           })}
 
-          {/* GPS Drift Zone indicator - moves with world, scaled for zoom */}
+          {/* SF15 POLISH: GPS Drift Zone - SIMPLIFIED per "Simplify Anomaly View" directive */}
+          {/* GPS_DRIFT label REMOVED - only subtle red indicator remains during anomaly */}
+          {/* "Too many places to look" - minimize visual noise */}
           {showUnknownObject && (
             <g className={isLowConfidence ? 'animate-pulse' : ''}>
+              {/* Subtle red pulse ring - no label, just visual indicator */}
               <circle
                 cx={unknownObjScreen.x}
                 cy={unknownObjScreen.y}
-                r="28"
+                r="20"
                 fill="none"
                 stroke={COLORS.alertRed}
-                strokeWidth="3"
-                strokeDasharray={unknownObject?.identified ? 'none' : '8 4'}
-                opacity={0.7}
+                strokeWidth="2"
+                strokeDasharray={unknownObject?.identified ? 'none' : '6 3'}
+                opacity={0.5}
               />
+              {/* Small center dot */}
               <circle
                 cx={unknownObjScreen.x}
                 cy={unknownObjScreen.y}
-                r="8"
+                r="4"
                 fill={unknownObject?.identified ? COLORS.textMuted : COLORS.alertRed}
+                opacity={0.6}
               />
-              <text
-                x={unknownObjScreen.x + 35}
-                y={unknownObjScreen.y - 8}
-                style={{
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  fontFamily: 'JetBrains Mono, monospace',
-                  fill: COLORS.alertRed,
-                }}
-              >
-                {unknownObject?.identified ? unknownObject.identifiedAs : 'GPS_DRIFT'}
-              </text>
+              {/* GPS_DRIFT LABEL REMOVED - the red drone glow and callout are enough */}
             </g>
           )}
         </g>
@@ -555,20 +447,8 @@ export function TacticalGrid({
           </g>
         </svg>
 
-        {/* Drone label - below the drone */}
-        <div
-          style={{
-            textAlign: 'center',
-            marginTop: '8px',
-            fontSize: '12px',
-            fontWeight: 500,
-            fontFamily: 'JetBrains Mono, monospace',
-            color: COLORS.textSecondary,
-            letterSpacing: '0.08em',
-          }}
-        >
-          UAV_01
-        </div>
+        {/* SF15 POLISH: UAV_01 LABEL REMOVED per "Kill Label Overlap" directive */}
+        {/* "The drone is the star - it doesn't need a name tag" */}
       </div>
 
       {/* COCKPIT v1.0: System callouts REMOVED - "Kill the System Jargon" */}
