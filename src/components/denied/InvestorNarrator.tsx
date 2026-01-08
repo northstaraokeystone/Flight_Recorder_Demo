@@ -374,23 +374,23 @@ function CalloutMoneyShot() {
         }}
       />
 
-      {/* Value comparison */}
+      {/* Value comparison - SF16: Fixed text contrast for readability */}
       <div
         style={{
           fontSize: '15px',
-          color: '#D1D5DB',
+          color: '#E2E8F0',  // SF16: Brighter base color
           lineHeight: 1.8,
           fontFamily: 'Inter, sans-serif',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <span style={{ color: '#94A3B8' }}>Standard systems:</span>
-          <span style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-            30+ second lag <span style={{ color: '#EF4444' }}>(too late)</span>
+          <span style={{ color: '#CBD5E1' }}>Standard systems:</span>
+          <span style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F5F9' }}>
+            30+ second lag <span style={{ color: '#FCA5A5', fontWeight: 500 }}>(too late)</span>
           </span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <span style={{ color: '#94A3B8' }}>Exposure avoided:</span>
+          <span style={{ color: '#CBD5E1' }}>Exposure avoided:</span>
           <span
             style={{
               fontFamily: 'JetBrains Mono, monospace',
@@ -398,16 +398,16 @@ function CalloutMoneyShot() {
               color: '#F1F5F9',
             }}
           >
-            $4M+ <span style={{ color: '#64748B', fontSize: '13px' }}>(crash/litigation)</span>
+            $4M+ <span style={{ color: '#94A3B8', fontSize: '13px' }}>(crash/litigation)</span>
           </span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: '#94A3B8' }}>Status:</span>
+          <span style={{ color: '#CBD5E1' }}>Status:</span>
           <span
             style={{
               fontFamily: 'JetBrains Mono, monospace',
               fontWeight: 600,
-              color: '#10B981',
+              color: '#34D399',  // SF16: Brighter green
             }}
           >
             Corrected. Receipted.
