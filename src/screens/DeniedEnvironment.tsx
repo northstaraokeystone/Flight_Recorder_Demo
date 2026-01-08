@@ -147,15 +147,15 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
   useEffect(() => {
     if (!autoplay) return;
 
-    // SF15 POLISH: Boot sequence with +20% pacing (2.4s per phase, ~8.4s total)
-    // Phase 1: "INITIALIZING PROOF SYSTEM..." - 2400ms (was 2000ms)
-    // Phase 2: "ESTABLISHING SECURE LINK..." - 2400ms (was 2000ms)
-    // Phase 3: "SYSTEM LIVE" + "● ONLINE" - 2400ms (was 2000ms)
+    // SF18 POLISH: Boot sequence with declarative statements (no ellipsis)
+    // Phase 1: "INITIALIZING PROOF SYSTEM" - 2400ms (declarative, no uncertainty)
+    // Phase 2: "SYSTEM LIVE" - 2400ms (declarative, confident)
+    // Phase 3: "MISSION START" - transition to running (declarative)
     const bootSteps = [
       { time: 0, text: '', progress: 0 },                                    // T-8.4s: BLACK
-      { time: 600, text: 'INITIALIZING PROOF SYSTEM...', progress: 25 },     // T-7.8s: Phase 1 (+20%)
-      { time: 3000, text: 'ESTABLISHING SECURE LINK...', progress: 50 },     // T-5.4s: Phase 2 (+20%)
-      { time: 5400, text: 'SYSTEM LIVE', progress: 100 },                    // T-3.0s: Phase 3 (+20%)
+      { time: 600, text: 'INITIALIZING PROOF SYSTEM', progress: 25 },        // T-7.8s: Phase 1 (no ellipsis)
+      { time: 3000, text: 'SYSTEM LIVE', progress: 50 },                     // T-5.4s: Phase 2 (no ellipsis)
+      { time: 5400, text: 'MISSION START', progress: 100 },                  // T-3.0s: Phase 3 (no ellipsis)
     ];
 
     bootSteps.forEach(step => {
@@ -498,12 +498,12 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
     setIsCrisisPaused(false);
     crisisPauseStartRef.current = null;
 
-    // SF15 POLISH: Restart boot sequence - 8.4 second intro (+20% pacing)
+    // SF18 POLISH: Restart boot sequence - 8.4 second intro (no ellipsis)
     const bootSteps = [
       { time: 0, text: '', progress: 0 },
-      { time: 600, text: 'INITIALIZING PROOF SYSTEM...', progress: 25 },
-      { time: 3000, text: 'ESTABLISHING SECURE LINK...', progress: 50 },
-      { time: 5400, text: 'SYSTEM LIVE', progress: 100 },
+      { time: 600, text: 'INITIALIZING PROOF SYSTEM', progress: 25 },
+      { time: 3000, text: 'SYSTEM LIVE', progress: 50 },
+      { time: 5400, text: 'MISSION START', progress: 100 },
     ];
 
     bootSteps.forEach(step => {
@@ -653,246 +653,52 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
         />
       )}
 
-      {/* ===== SF16 POLISH: STYLED HUD GAUGES - Bottom-center, glass cockpit style ===== */}
-      {/* LAYOUT FIX: Meters styled with glass container, gradients, threshold markers */}
-      {/* SF15 POLISH: FOCUS MODE - dims to 50% during crisis */}
+      {/* ===== SF18: UNIFIED CONSOLE - Fighter Jet Cockpit Layout ===== */}
+      {/* Everything below the flight area consolidates into ONE unified bottom console */}
+      {/* Eye path: Center (drone) -> Down (console). No left/right/corner scanning */}
       {demoPhase === 'RUNNING' && (
         <div
-          className="z-40"
+          className="unified-console z-40"
           style={{
             position: 'fixed',
-            bottom: '70px',  // COCKPIT: 60-80px from bottom, above browser chrome
+            bottom: '30px',
             left: '50%',
             transform: 'translateX(-50%)',
-            background: 'rgba(0, 0, 0, 0.7)',  // SF16: Slightly more opaque
-            backdropFilter: 'blur(12px)',      // SF16: Stronger blur
-            border: '1px solid rgba(255, 255, 255, 0.15)',  // SF16: More visible border
-            borderRadius: '8px',               // SF16: Rounder corners
-            padding: '16px 24px',              // SF16: More padding
+            width: '800px',
+            maxWidth: '90vw',
             display: 'flex',
-            gap: '32px',
-            alignItems: 'center',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)',  // SF16: Depth
-            // SF15 FOCUS MODE: Dim to 50% during crisis, 90% normal (brighter)
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'stretch',
+            gap: '16px',
+            background: 'rgba(10, 10, 10, 0.85)',
+            backdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '12px',
+            padding: '16px',
+            boxShadow: '0 4px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+            // SF15 FOCUS MODE: Dim to 50% during crisis
             opacity: isCrisisPaused ? 0.5 : 0.9,
             transition: 'opacity 0.5s ease-out',
           }}
         >
-          {/* CONFIDENCE Gauge - SF16: Enhanced with threshold marker */}
-          <div className="flex items-center gap-3">
-            <span
-              style={{
-                fontSize: '11px',
-                fontWeight: 600,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: '#CBD5E1',  // SF16: Brighter label
-                fontFamily: 'Inter, sans-serif',
-              }}
-            >
-              CONFIDENCE
-            </span>
-            <div
-              style={{
-                position: 'relative',
-                width: '120px',
-                height: '10px',
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                borderRadius: '5px',
-                overflow: 'visible',  // SF16: Allow threshold marker to show
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-              }}
-            >
-              {/* Progress bar with gradient */}
-              <div
-                style={{
-                  width: `${governance.confidence * 100}%`,
-                  height: '100%',
-                  background: governance.confidence > 0.80
-                    ? 'linear-gradient(90deg, #059669, #10B981)'
-                    : governance.confidence > 0.60
-                    ? 'linear-gradient(90deg, #b45309, #d97706)'
-                    : 'linear-gradient(90deg, #dc2626, #ef4444)',
-                  transition: 'width 300ms ease-out, background 300ms ease-out',
-                  borderRadius: '4px',
-                  boxShadow: governance.confidence > 0.80
-                    ? '0 0 8px rgba(16, 185, 129, 0.4)'
-                    : governance.confidence > 0.60
-                    ? '0 0 8px rgba(217, 119, 6, 0.4)'
-                    : '0 0 8px rgba(239, 68, 68, 0.4)',
-                }}
-              />
-              {/* Threshold marker at 80% */}
-              <div
-                style={{
-                  position: 'absolute',
-                  left: '80%',
-                  top: '-3px',
-                  bottom: '-3px',
-                  width: '2px',
-                  backgroundColor: '#F1F5F9',
-                  opacity: 0.6,
-                  borderRadius: '1px',
-                }}
-                title="80% threshold"
-              />
-            </div>
-            <span
-              style={{
-                fontSize: '15px',
-                fontWeight: 700,
-                fontFamily: 'JetBrains Mono, monospace',
-                color: governance.confidence > 0.80 ? '#34D399' :
-                       governance.confidence > 0.60 ? '#FCD34D' : '#FCA5A5',
-                minWidth: '40px',
-                textShadow: '0 0 10px currentColor',  // SF16: Glow effect
-              }}
-            >
-              {Math.round(governance.confidence * 100)}%
-            </span>
-          </div>
-
-          {/* Divider - SF16: More visible */}
+          {/* ===== LEFT COLUMN: Event Stream (~35% / 260px) ===== */}
           <div
             style={{
-              width: '1px',
-              height: '28px',
-              background: 'linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.2), transparent)',
-            }}
-          />
-
-          {/* ENTROPY Gauge - SF16: Enhanced with threshold marker */}
-          {(() => {
-            // Calculate entropy based on phase (higher during uncertainty)
-            const entropy = ['UNCERTAINTY_DETECTED', 'CRAG_TRIGGERED', 'HUMAN_QUERY'].includes(phase)
-              ? 0.72
-              : ['HUMAN_RESPONSE', 'RACI_HANDOFF_BACK'].includes(phase)
-                ? 0.45
-                : 0.18;
-
-            return (
-              <div className="flex items-center gap-3">
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: '#CBD5E1',  // SF16: Brighter label
-                    fontFamily: 'Inter, sans-serif',
-                  }}
-                >
-                  ENTROPY
-                </span>
-                <div
-                  style={{
-                    position: 'relative',
-                    width: '120px',
-                    height: '10px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                    borderRadius: '5px',
-                    overflow: 'visible',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                  }}
-                >
-                  {/* Progress bar with gradient */}
-                  <div
-                    style={{
-                      width: `${entropy * 100}%`,
-                      height: '100%',
-                      // Entropy: LOW is good (green), HIGH is bad (red)
-                      background: entropy < 0.40
-                        ? 'linear-gradient(90deg, #059669, #10B981)'
-                        : entropy < 0.60
-                        ? 'linear-gradient(90deg, #b45309, #d97706)'
-                        : 'linear-gradient(90deg, #dc2626, #ef4444)',
-                      transition: 'width 300ms ease-out, background 300ms ease-out',
-                      borderRadius: '4px',
-                      boxShadow: entropy < 0.40
-                        ? '0 0 8px rgba(16, 185, 129, 0.4)'
-                        : entropy < 0.60
-                        ? '0 0 8px rgba(217, 119, 6, 0.4)'
-                        : '0 0 8px rgba(239, 68, 68, 0.4)',
-                    }}
-                  />
-                  {/* Threshold marker at 50% */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      left: '50%',
-                      top: '-3px',
-                      bottom: '-3px',
-                      width: '2px',
-                      backgroundColor: '#F1F5F9',
-                      opacity: 0.6,
-                      borderRadius: '1px',
-                    }}
-                    title="50% threshold"
-                  />
-                </div>
-                <span
-                  style={{
-                    fontSize: '15px',
-                    fontWeight: 700,
-                    fontFamily: 'JetBrains Mono, monospace',
-                    color: entropy < 0.40 ? '#34D399' :
-                           entropy < 0.60 ? '#FCD34D' : '#FCA5A5',
-                    minWidth: '40px',
-                    textShadow: '0 0 10px currentColor',  // SF16: Glow effect
-                  }}
-                >
-                  {Math.round(entropy * 100)}%
-                </span>
-              </div>
-            );
-          })()}
-        </div>
-      )}
-
-      {/* COCKPIT v1.0: Leader Lines REMOVED - "Kill the System Jargon" */}
-      {/* Yellow tooltips with CRAG_FALLBACK, RACI_HANDOFF, hex addresses are eliminated */}
-      {/* Only investor narrator callouts remain for clean, CFO-grade presentation */}
-
-      {/* ===== SF16 POLISH: CENTER CONSOLE Event Stream ===== */}
-      {/* LAYOUT FIX: Terminal moved from LEFT EDGE to CENTER-LEFT under drone */}
-      {/* Part of the "center console" zone - feels like cockpit instrument cluster */}
-      {/* SF15 POLISH: FOCUS MODE - dims to 40% during crisis for "one focus point" */}
-      {demoPhase === 'RUNNING' && (
-        <div
-          className="z-30"
-          style={{
-            position: 'fixed',
-            top: '55%',            // SF16: Below drone (drone is at 40%)
-            left: '5%',            // SF16: Left of center, part of console zone
-            width: '300px',        // SF16: 280-320px, compact
-            maxHeight: '240px',    // SF16: 200-250px max, scrollable
-            background: 'rgba(0, 0, 0, 0.6)',  // SF16: Slightly more opaque for readability
-            backdropFilter: 'blur(8px)',       // SF16: Glass effect
-            border: '1px solid rgba(255, 255, 255, 0.1)',  // SF16: Subtle border
-            borderRadius: '8px',   // SF16: Rounded corners
-            padding: '16px',
-            overflow: 'hidden',
-            // SF15 FOCUS MODE: Dim to 40% during crisis, 85% normal (brighter for Zoom)
-            opacity: isCrisisPaused ? 0.4 : 0.85,
-            transition: 'opacity 0.5s ease-out',
-          }}
-        >
-          {/* COCKPIT v1.0: Event stream - left-aligned, compact */}
-          {/* SF15 POLISH: Human-readable event names per "Clean Event Stream" directive */}
-          <div
-            className="flex flex-col h-full overflow-hidden"
-            style={{
+              flex: '0 0 260px',
+              maxHeight: '160px',
+              overflow: 'hidden',
               fontFamily: 'JetBrains Mono, monospace',
             }}
           >
-            {/* Stream header - SF16: Brighter for Zoom compression */}
+            {/* Stream header */}
             <div
               style={{
-                fontSize: '11px',
+                fontSize: '10px',
                 fontWeight: 600,
-                color: '#94A3B8',  // SF16: Brighter (#64748B -> #94A3B8)
+                color: '#64748B',
                 letterSpacing: '0.1em',
-                marginBottom: '12px',
+                marginBottom: '8px',
                 textTransform: 'uppercase',
               }}
             >
@@ -902,24 +708,30 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
             {governanceLog.length === 0 ? (
               <div
                 style={{
-                  fontSize: '12px',
+                  fontSize: '11px',
                   fontWeight: 500,
-                  color: '#94A3B8',  // SF16: Brighter
-                  opacity: 0.8,     // SF16: Higher opacity
+                  color: '#64748B',
+                  opacity: 0.7,
                 }}
               >
                 AWAITING EVENTS...
               </div>
             ) : (
-              <div className="space-y-2 overflow-y-auto" style={{ flex: 1 }}>
-                {/* COCKPIT: Newest at top, show event type + timestamp only */}
-                {[...governanceLog].reverse().slice(0, 15).map((entry, idx) => {
+              <div
+                style={{
+                  maxHeight: '120px',
+                  overflowY: 'auto',
+                  overflowX: 'hidden',
+                }}
+              >
+                {/* SF18: Compact event format - 5 visible lines max */}
+                {/* [##] ICON EVENT_TYPE detail */}
+                {[...governanceLog].reverse().slice(0, 5).map((entry, idx) => {
                   const isCritical = entry.severity === 'CRITICAL';
                   const isWarning = entry.severity === 'WARN';
                   const isSuccess = entry.severity === 'SUCCESS';
 
-                  // SF15 POLISH: Human-readable event name mapping
-                  // "If a CFO wouldn't understand it, rename it or remove it"
+                  // SF18: Human-readable event name mapping with icons
                   const getDisplayName = (eventType: string): string => {
                     const nameMap: Record<string, string> = {
                       'WAYPOINT_ACHIEVED': '✓ WAYPOINT',
@@ -927,8 +739,8 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
                       'UNCERTAINTY_DETECTED': '⚠ ANOMALY',
                       'CRAG_FALLBACK_TRIGGERED': 'FALLBACK',
                       'EXTERNAL_QUERY': 'GROUND_QUERY',
-                      'GROUND_CONTROL_RESPONSE': 'CTRL_RESPONSE',
-                      'RACI_HANDOFF': 'CONTROL_XFER',
+                      'GROUND_CONTROL_RESPONSE': 'CTRL_RESP',
+                      'RACI_HANDOFF': 'CTRL_XFER',
                       'ROUTE_RESUMED': '✓ ROUTE_OK',
                       'MISSION_COMPLETE': '✓ COMPLETE',
                       'CHAIN_VERIFY': '✓ VERIFIED',
@@ -936,86 +748,275 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
                     return nameMap[eventType] || eventType;
                   };
 
-                  // SF16 POLISH: Entry fade effect - brighter for Zoom compression
-                  // Increased minimum opacity from 0.3 to 0.5 for readability
-                  const opacityMap = [1.0, 0.95, 0.9, 0.88, 0.85, 0.82, 0.78, 0.75, 0.70, 0.65, 0.60, 0.58, 0.55, 0.52, 0.50];
-                  const entryOpacity = opacityMap[idx] || 0.5;
+                  // SF18: Compact fade effect
+                  const opacityMap = [1.0, 0.85, 0.70, 0.55, 0.45];
+                  const entryOpacity = opacityMap[idx] || 0.45;
 
                   return (
                     <div
                       key={entry.blockId}
-                      className={`py-1 ${idx === 0 ? 'animate-fadeIn' : ''}`}
+                      className={idx === 0 ? 'animate-fadeIn' : ''}
                       style={{
                         opacity: entryOpacity,
-                        lineHeight: '1.4',
-                        transition: 'opacity 0.5s ease-out',
-                        textAlign: 'left',  // COCKPIT: Left-aligned
+                        lineHeight: '1.3',
+                        marginBottom: '4px',
+                        fontSize: '11px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
                       }}
                     >
-                      {/* SF16: Compact format - [##] EVENT_TYPE  timestamp */}
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                        <span
-                          style={{
-                            fontSize: '11px',
-                            fontWeight: 600,  // SF16: Bolder
-                            color: '#94A3B8', // SF16: Brighter (#64748B -> #94A3B8)
-                          }}
-                        >
-                          [{String(entry.blockId).padStart(2, '0')}]
-                        </span>
-
-                        <span
-                          style={{
-                            fontSize: isCritical ? '13px' : '12px',
-                            fontWeight: isCritical ? 700 : isSuccess ? 600 : 500,
-                            color: isCritical ? '#FCA5A5' :  // SF16: Brighter red
-                                   isWarning ? '#FCD34D' :   // SF16: Brighter amber
-                                   isSuccess ? '#34D399' :   // SF16: Brighter green
-                                   '#E2E8F0',                // SF16: Brighter default
-                            flex: 1,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {getDisplayName(entry.eventType)}
-                          {entry.detail && (
-                            <span style={{ color: '#B0B8C4', marginLeft: '6px', fontSize: '11px' }}>
-                              {entry.detail}
-                            </span>
-                          )}
-                        </span>
-                      </div>
-
-                      {/* Timestamp on second line - SF16: Brighter */}
-                      <div
+                      <span style={{ color: '#64748B', fontWeight: 600 }}>
+                        [{String(entry.blockId).padStart(2, '0')}]
+                      </span>
+                      {' '}
+                      <span
                         style={{
-                          fontSize: '10px',
-                          color: '#64748B',  // SF16: Brighter (#475569 -> #64748B)
-                          marginLeft: '32px',
-                          marginTop: '2px',
+                          fontWeight: isCritical ? 700 : isSuccess ? 600 : 500,
+                          color: isCritical ? '#FCA5A5' :
+                                 isWarning ? '#FCD34D' :
+                                 isSuccess ? '#34D399' :
+                                 '#CBD5E1',
                         }}
                       >
-                        {entry.timestamp}
-                      </div>
+                        {getDisplayName(entry.eventType)}
+                      </span>
+                      {entry.detail && (
+                        <span style={{ color: '#94A3B8', marginLeft: '4px' }}>
+                          {entry.detail.length > 8 ? entry.detail.substring(0, 8) + '...' : entry.detail}
+                        </span>
+                      )}
                     </div>
                   );
                 })}
               </div>
             )}
+          </div>
 
-            {/* Block count - SF16: Brighter for readability */}
+          {/* ===== CENTER COLUMN: Status/Integrity (~30% / 220px) ===== */}
+          <div
+            style={{
+              flex: '0 0 220px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+              padding: '0 16px',
+              fontFamily: 'JetBrains Mono, monospace',
+            }}
+          >
+            {/* Chain Status */}
             <div
-              className="mt-auto pt-4"
               style={{
-                fontSize: '10px',
-                color: '#94A3B8',  // SF16: Brighter
-                opacity: 0.8,     // SF16: Higher opacity
-                textAlign: 'left',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '8px',
+                fontSize: '12px',
               }}
             >
-              {governanceLog.length} BLOCKS LOGGED
+              <span style={{ color: '#34D399' }}>✓</span>
+              <span style={{ color: '#94A3B8' }}>Chain:</span>
+              <span style={{ color: '#34D399', fontWeight: 600 }}>UNBROKEN</span>
             </div>
+
+            {/* Receipts Count */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '8px',
+                fontSize: '12px',
+              }}
+            >
+              <span style={{ color: '#34D399' }}>✓</span>
+              <span style={{ color: '#94A3B8' }}>Receipts:</span>
+              <span style={{ color: '#E2E8F0', fontWeight: 600 }}>{governanceLog.length}</span>
+            </div>
+
+            {/* Proof Status */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '12px',
+              }}
+            >
+              <span style={{ color: '#34D399' }}>✓</span>
+              <span style={{ color: '#94A3B8' }}>Proof:</span>
+              <span style={{ color: '#34D399', fontWeight: 600 }}>ACTIVE</span>
+            </div>
+          </div>
+
+          {/* ===== RIGHT COLUMN: Meters (~35% / 260px) ===== */}
+          <div
+            style={{
+              flex: '0 0 260px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              gap: '12px',
+            }}
+          >
+            {/* CONFIDENCE Gauge */}
+            <div>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '4px',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: '#94A3B8',
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  CONFIDENCE
+                </span>
+                <span
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    fontFamily: 'JetBrains Mono, monospace',
+                    color: governance.confidence > 0.80 ? '#34D399' :
+                           governance.confidence > 0.60 ? '#FCD34D' : '#FCA5A5',
+                  }}
+                >
+                  {Math.round(governance.confidence * 100)}%
+                </span>
+              </div>
+              <div
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  height: '8px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  borderRadius: '4px',
+                  overflow: 'visible',
+                }}
+              >
+                <div
+                  style={{
+                    width: `${governance.confidence * 100}%`,
+                    height: '100%',
+                    background: governance.confidence > 0.80
+                      ? 'linear-gradient(90deg, #059669, #10B981)'
+                      : governance.confidence > 0.60
+                      ? 'linear-gradient(90deg, #b45309, #d97706)'
+                      : 'linear-gradient(90deg, #dc2626, #ef4444)',
+                    transition: 'width 300ms ease-out',
+                    borderRadius: '4px',
+                  }}
+                />
+                {/* Threshold marker at 80% */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '80%',
+                    top: '-2px',
+                    bottom: '-2px',
+                    width: '2px',
+                    backgroundColor: '#F1F5F9',
+                    opacity: 0.5,
+                    borderRadius: '1px',
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* ENTROPY Gauge */}
+            {(() => {
+              const entropy = ['UNCERTAINTY_DETECTED', 'CRAG_TRIGGERED', 'HUMAN_QUERY'].includes(phase)
+                ? 0.72
+                : ['HUMAN_RESPONSE', 'RACI_HANDOFF_BACK'].includes(phase)
+                  ? 0.45
+                  : 0.18;
+
+              return (
+                <div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '4px',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase',
+                        color: '#94A3B8',
+                        fontFamily: 'Inter, sans-serif',
+                      }}
+                    >
+                      ENTROPY
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '14px',
+                        fontWeight: 700,
+                        fontFamily: 'JetBrains Mono, monospace',
+                        color: entropy < 0.40 ? '#34D399' :
+                               entropy < 0.60 ? '#FCD34D' : '#FCA5A5',
+                      }}
+                    >
+                      {Math.round(entropy * 100)}%
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      position: 'relative',
+                      width: '100%',
+                      height: '8px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                      borderRadius: '4px',
+                      overflow: 'visible',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${entropy * 100}%`,
+                        height: '100%',
+                        background: entropy < 0.40
+                          ? 'linear-gradient(90deg, #059669, #10B981)'
+                          : entropy < 0.60
+                          ? 'linear-gradient(90deg, #b45309, #d97706)'
+                          : 'linear-gradient(90deg, #dc2626, #ef4444)',
+                        transition: 'width 300ms ease-out',
+                        borderRadius: '4px',
+                      }}
+                    />
+                    {/* Threshold marker at 50% */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: '50%',
+                        top: '-2px',
+                        bottom: '-2px',
+                        width: '2px',
+                        backgroundColor: '#F1F5F9',
+                        opacity: 0.5,
+                        borderRadius: '1px',
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -1033,7 +1034,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
             backdropFilter: 'blur(4px)',
           }}
         >
-          {/* Brief "VERIFYING..." transition */}
+          {/* SF18: Brief "VERIFYING" transition - declarative, no ellipsis */}
           <div
             className="text-center animate-pulse"
             style={{
@@ -1049,29 +1050,14 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
                 fontFamily: 'JetBrains Mono, monospace',
               }}
             >
-              VERIFYING CHAIN INTEGRITY...
+              VERIFYING CHAIN INTEGRITY
             </div>
           </div>
         </div>
       )}
 
-      {/* ===== Phase indicator (small, bottom left) ===== */}
-      {demoPhase === 'RUNNING' && (
-        <div
-          className="fixed bottom-4 left-4 px-3 py-2 z-30"
-          style={{
-            backgroundColor: 'rgba(9, 9, 11, 0.85)',
-            backdropFilter: 'blur(4px)',
-            border: `1px solid ${COLORS.borderBracket}`,
-            borderRadius: '4px',
-            fontSize: '10px',
-            fontFamily: 'JetBrains Mono, monospace',
-            color: COLORS.textTimestamp,
-          }}
-        >
-          T+{Math.floor(elapsedTime / 1000)}s
-        </div>
-      )}
+      {/* SF18: Timer REMOVED from bottom-left corner per unified console directive */}
+      {/* All telemetry now consolidated into unified console at bottom center */}
 
       {/* ===== Affidavit Overlay - THE MIC DROP. NOTHING AFTER. ===== */}
       <Affidavit
