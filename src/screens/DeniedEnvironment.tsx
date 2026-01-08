@@ -659,7 +659,12 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
           isMissionComplete={isMissionComplete}
           anomaliesDetected={1}
           anomaliesCorrected={1}
-          onViewVerification={() => setShowAffidavit(true)}
+          onViewVerification={() => {
+            // SF20: Ensure we transition to SEAL phase before showing Affidavit
+            setDemoPhase('SEAL');
+            setMapOpacity(0.6);
+            setShowAffidavit(true);
+          }}
         />
       )}
 
@@ -1075,28 +1080,31 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       {/* All telemetry now consolidated into unified console at bottom center */}
 
       {/* ===== Affidavit Overlay - THE MIC DROP. NOTHING AFTER. ===== */}
-      <Affidavit
-        isVisible={showAffidavit}
-        missionId={AFFIDAVIT_DATA.missionId}
-        aircraft={AFFIDAVIT_DATA.aircraft}
-        operator={AFFIDAVIT_DATA.operator}
-        waypointsCompleted={5}
-        waypointsTotal={5}
-        flightTime={flightTime}
-        anomaliesDetected={1}
-        anomaliesResolved={1}
-        raciHandoffs={2}
-        raciCompliance={100}
-        cragResolutions={1}
-        reasonCodesApplied={['RC006_CONTEXT_MISSING']}
-        humanOverrideEvents={1}
-        humanOverrideDetails="Ground Control @ T+28"
-        liabilityStatus="SHARED"
-        regulatoryTrigger={null}
-        blocks={blockCountRef.current}
-        receipts={governanceLog.length}
-        onRestart={handleRestart}
-      />
+      {/* SF20: Only render Affidavit during SEAL phase to prevent early appearance */}
+      {demoPhase === 'SEAL' && (
+        <Affidavit
+          isVisible={showAffidavit}
+          missionId={AFFIDAVIT_DATA.missionId}
+          aircraft={AFFIDAVIT_DATA.aircraft}
+          operator={AFFIDAVIT_DATA.operator}
+          waypointsCompleted={5}
+          waypointsTotal={5}
+          flightTime={flightTime}
+          anomaliesDetected={1}
+          anomaliesResolved={1}
+          raciHandoffs={2}
+          raciCompliance={100}
+          cragResolutions={1}
+          reasonCodesApplied={['RC006_CONTEXT_MISSING']}
+          humanOverrideEvents={1}
+          humanOverrideDetails="Ground Control @ T+28"
+          liabilityStatus="SHARED"
+          regulatoryTrigger={null}
+          blocks={blockCountRef.current}
+          receipts={governanceLog.length}
+          onRestart={handleRestart}
+        />
+      )}
 
       {/* TrustGap REMOVED from demo flow per Deal-Killer #4
        * The comparison slide is for pitch deck, not the software demo.
