@@ -531,23 +531,8 @@ export function TacticalGrid({
         </div>
       </div>
 
-      {/* Low confidence indicator - Top right - DEAL-KILLER #2 */}
-      {isLowConfidence && (
-        <div
-          className="absolute top-4 right-4 px-4 py-3"
-          style={{
-            backgroundColor: 'rgba(239, 68, 68, 0.2)',
-            border: '1px solid #FCA5A5',
-            borderRadius: '4px',
-            fontSize: '14px',
-            fontWeight: 700,
-            fontFamily: 'JetBrains Mono, monospace',
-            color: '#FCA5A5',
-          }}
-        >
-          CONFIDENCE: {(confidence * 100).toFixed(0)}%
-        </div>
-      )}
+      {/* SF18: Low confidence indicator REMOVED from top-right corner */}
+      {/* Now displayed in unified console at bottom center */}
     </div>
   );
 }

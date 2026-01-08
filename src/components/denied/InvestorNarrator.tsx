@@ -134,11 +134,12 @@ export function InvestorNarrator({
           transform: 'translateX(-50%)',
         };
       case 'bottom-center':
-        // COCKPIT v1.0: Center, under drone (viewport 55-65% from top)
-        // Drone is at 40% from top, so callout goes at ~55% (below drone)
+        // SF18: ANOMALY ALERT floats ABOVE the unified console, BELOW the drone
+        // Console is at bottom: 30px, ~200px tall. Alert should be above it with 30px gap.
+        // This is the "emergency layer" - appears under drone but above console
         return {
           position: 'fixed',
-          top: '55%',  // COCKPIT: Below drone center (drone at 40%), stays put in viewport
+          bottom: '250px',  // SF18: Above console (30px bottom + 190px height + 30px gap)
           left: '50%',
           transform: 'translateX(-50%)',
         };
