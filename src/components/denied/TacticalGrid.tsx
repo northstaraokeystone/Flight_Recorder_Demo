@@ -350,29 +350,50 @@ export function TacticalGrid({
             );
           })}
 
+          {/* SF16 POLISH: ANOMALY VECTOR LINE - from drone to threat */}
+          {/* "Red anomaly vector line originates from drone" per directive */}
+          {showUnknownObject && isLowConfidence && (
+            <line
+              x1={DRONE_SCREEN_X}
+              y1={DRONE_SCREEN_Y}
+              x2={unknownObjScreen.x}
+              y2={unknownObjScreen.y}
+              stroke={COLORS.alertRed}
+              strokeWidth="4"       // SF16: Thickened from 2px to 4px
+              strokeDasharray="8 4"
+              opacity={0.8}
+              style={{
+                filter: 'drop-shadow(0 0 6px rgba(239, 68, 68, 0.6))',  // SF16: Glow effect
+              }}
+            />
+          )}
+
           {/* SF15 POLISH: GPS Drift Zone - SIMPLIFIED per "Simplify Anomaly View" directive */}
           {/* GPS_DRIFT label REMOVED - only subtle red indicator remains during anomaly */}
           {/* "Too many places to look" - minimize visual noise */}
           {showUnknownObject && (
             <g className={isLowConfidence ? 'animate-pulse' : ''}>
-              {/* Subtle red pulse ring - no label, just visual indicator */}
+              {/* Subtle red pulse ring - SF16: Thicker stroke */}
               <circle
                 cx={unknownObjScreen.x}
                 cy={unknownObjScreen.y}
-                r="20"
+                r="24"               // SF16: Slightly larger
                 fill="none"
                 stroke={COLORS.alertRed}
-                strokeWidth="2"
+                strokeWidth="3"      // SF16: Thickened from 2px to 3px
                 strokeDasharray={unknownObject?.identified ? 'none' : '6 3'}
-                opacity={0.5}
+                opacity={0.7}        // SF16: More visible
+                style={{
+                  filter: isLowConfidence ? 'drop-shadow(0 0 8px rgba(239, 68, 68, 0.5))' : 'none',
+                }}
               />
-              {/* Small center dot */}
+              {/* Center dot - SF16: Larger */}
               <circle
                 cx={unknownObjScreen.x}
                 cy={unknownObjScreen.y}
-                r="4"
+                r="6"                // SF16: Larger from 4px to 6px
                 fill={unknownObject?.identified ? COLORS.textMuted : COLORS.alertRed}
-                opacity={0.6}
+                opacity={0.8}
               />
               {/* GPS_DRIFT LABEL REMOVED - the red drone glow and callout are enough */}
             </g>
