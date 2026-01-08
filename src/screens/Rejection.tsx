@@ -72,7 +72,7 @@ function getAttackDescription(attackType: AttackType): string {
 }
 
 export function Rejection({ receipts, attackType, onAdvance }: RejectionProps) {
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(30); // 6x: rejection output focus area (was 5)
 
   const authorityChain = useMemo(() => getAuthorityChain(receipts), [receipts]);
   const verificationResults = useMemo(() => getVerificationResults(attackType), [attackType]);
