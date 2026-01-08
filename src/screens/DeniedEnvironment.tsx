@@ -98,6 +98,11 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
   const [isAnomalyDetected, setIsAnomalyDetected] = useState(false);
   const [isMissionComplete, setIsMissionComplete] = useState(false);
 
+  // SF18 FINAL POLISH: Cinematic pre-roll delay
+  // 1.5 seconds of pure black before anything appears
+  // Absorbs video buffering, lets viewer settle, creates anticipation
+  const CINEMATIC_PREROLL = 1500; // 1.5 seconds of black before boot sequence starts
+
   // BULLET TIME: Crisis pause state for dramatic effect
   // When anomaly fires, simulation FREEZES so viewer can read callout
   // SF15 POLISH: Increased to 4.5 seconds for "distracted CFO" readability
@@ -147,15 +152,17 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
   useEffect(() => {
     if (!autoplay) return;
 
-    // SF18 POLISH: Boot sequence with declarative statements (no ellipsis)
-    // Phase 1: "INITIALIZING PROOF SYSTEM" - 2400ms (declarative, no uncertainty)
-    // Phase 2: "SYSTEM LIVE" - 2400ms (declarative, confident)
-    // Phase 3: "MISSION START" - transition to running (declarative)
+    // SF18 FINAL POLISH: Boot sequence with 1.5s cinematic pre-roll
+    // t=0.0s → t=1.5s: BLACK SCREEN (total silence, nothing rendered)
+    // t=1.5s → t=3.5s: "INITIALIZING PROOF SYSTEM" fades in
+    // t=3.5s → t=5.5s: "SYSTEM LIVE"
+    // t=5.5s+: "MISSION START" then transition to running
+    // All timings shifted by +CINEMATIC_PREROLL (1500ms) for video buffer absorption
     const bootSteps = [
-      { time: 0, text: '', progress: 0 },                                    // T-8.4s: BLACK
-      { time: 600, text: 'INITIALIZING PROOF SYSTEM', progress: 25 },        // T-7.8s: Phase 1 (no ellipsis)
-      { time: 3000, text: 'SYSTEM LIVE', progress: 50 },                     // T-5.4s: Phase 2 (no ellipsis)
-      { time: 5400, text: 'MISSION START', progress: 100 },                  // T-3.0s: Phase 3 (no ellipsis)
+      { time: 0, text: '', progress: 0 },                                    // T-9.9s: BLACK (pre-roll)
+      { time: 2100, text: 'INITIALIZING PROOF SYSTEM', progress: 25 },       // T-7.8s: Phase 1 (after 1.5s pre-roll + 0.6s)
+      { time: 4500, text: 'SYSTEM LIVE', progress: 50 },                     // T-5.4s: Phase 2
+      { time: 6900, text: 'MISSION START', progress: 100 },                  // T-3.0s: Phase 3
     ];
 
     bootSteps.forEach(step => {
@@ -165,24 +172,24 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       }, step.time);
     });
 
-    // Grid fades in at T-1.8s (+20%)
+    // Grid fades in at T-1.8s (shifted by +1.5s pre-roll)
     setTimeout(() => {
       setMapOpacity(0.5); // Start fading in
-    }, 6600);
+    }, 8100);
 
-    // Drone appears at T-0.6s, full opacity (+20%)
+    // Drone appears at T-0.6s, full opacity (shifted by +1.5s pre-roll)
     setTimeout(() => {
       setMapOpacity(1);
-    }, 7800);
+    }, 9300);
 
-    // Transition to running at T+0.0s (8.4 second intro total, +20%)
+    // Transition to running at T+0.0s (9.9 second intro total with 1.5s pre-roll)
     setTimeout(() => {
       setDemoPhase('RUNNING');
       startTimeRef.current = Date.now();
       phaseStartRef.current = Date.now();
       setIsRunning(true);
       transitionToPhase('TAKEOFF');
-    }, 8400);
+    }, 9900);
   }, [autoplay]);
 
   // Phase transition logic
@@ -498,12 +505,13 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
     setIsCrisisPaused(false);
     crisisPauseStartRef.current = null;
 
-    // SF18 POLISH: Restart boot sequence - 8.4 second intro (no ellipsis)
+    // SF18 FINAL POLISH: Restart boot sequence with 1.5s cinematic pre-roll
+    // All timings shifted by +1500ms for video buffer absorption
     const bootSteps = [
       { time: 0, text: '', progress: 0 },
-      { time: 600, text: 'INITIALIZING PROOF SYSTEM', progress: 25 },
-      { time: 3000, text: 'SYSTEM LIVE', progress: 50 },
-      { time: 5400, text: 'MISSION START', progress: 100 },
+      { time: 2100, text: 'INITIALIZING PROOF SYSTEM', progress: 25 },
+      { time: 4500, text: 'SYSTEM LIVE', progress: 50 },
+      { time: 6900, text: 'MISSION START', progress: 100 },
     ];
 
     bootSteps.forEach(step => {
@@ -513,15 +521,16 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       }, step.time);
     });
 
-    // Grid fades in (+20%)
+    // Grid fades in (shifted by +1.5s pre-roll)
     setTimeout(() => {
       setMapOpacity(0.5);
-    }, 6600);
+    }, 8100);
 
     setTimeout(() => {
       setMapOpacity(1);
-    }, 7800);
+    }, 9300);
 
+    // Transition to running (9.9 second intro total with 1.5s pre-roll)
     setTimeout(() => {
       setDemoPhase('RUNNING');
       startTimeRef.current = Date.now();
@@ -529,7 +538,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
       lastTickRef.current = Date.now();
       setIsRunning(true);
       transitionToPhase('TAKEOFF');
-    }, 8400);
+    }, 9900);
   }, [transitionToPhase]);
 
   // Calculate flight time for affidavit
