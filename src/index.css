@@ -875,3 +875,15 @@ body {
     transform: translateX(-50%) translateY(-10px);
   }
 }
+
+/* ===== SF19 FINAL POLISH: Verify Pulse Animation ===== */
+/* "VERIFYING CHAIN INTEGRITY" white blinking text - 1.2s cycle */
+/* Opacity fades from 1.0 → 0.5 → 1.0 for smooth pulsing effect */
+@keyframes verifyPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

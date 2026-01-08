@@ -51,7 +51,8 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
   // Demo phase (for boot sequence and end seal)
   const [demoPhase, setDemoPhase] = useState<DemoPhase>('BOOT');
   const [bootProgress, setBootProgress] = useState(0);
-  const [bootText, setBootText] = useState('INITIALIZING FLIGHT RECORDER v3.0...');
+  // SF19: Initial boot text is EMPTY - no flash before "INITIALIZING PROOF SYSTEM"
+  const [bootText, setBootText] = useState('');
 
   // Core state
   const [phase, setPhase] = useState<ScenarioPhase>('TAKEOFF');
@@ -101,7 +102,7 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
   // SF18 FINAL POLISH: Cinematic pre-roll delay
   // 1.5 seconds of pure black before anything appears
   // Absorbs video buffering, lets viewer settle, creates anticipation
-  const CINEMATIC_PREROLL = 1500; // 1.5 seconds of black before boot sequence starts
+  // Note: Pre-roll timing is built into bootSteps array (first step is empty text at t=0)
 
   // BULLET TIME: Crisis pause state for dramatic effect
   // When anomaly fires, simulation FREEZES so viewer can read callout
@@ -1043,20 +1044,25 @@ export function DeniedEnvironment({ onComplete: _onComplete, autoplay = true }: 
             backdropFilter: 'blur(4px)',
           }}
         >
-          {/* SF18: Brief "VERIFYING" transition - declarative, no ellipsis */}
+          {/* SF19: "VERIFYING CHAIN INTEGRITY" - WHITE, CENTERED, BLINKING */}
+          {/* Matches intro sequence style - pure white with 1-1.5s pulse cycle */}
           <div
-            className="text-center animate-pulse"
+            className="text-center"
             style={{
               animation: 'fadeIn 1s ease-out forwards',
             }}
           >
             <div
               style={{
-                fontSize: '16px',
-                fontWeight: 600,
-                color: '#10B981',
+                fontSize: '28px',
+                fontWeight: 700,
+                color: '#F1F5F9',  // SF19: Pure white (not green)
                 letterSpacing: '0.15em',
                 fontFamily: 'JetBrains Mono, monospace',
+                textTransform: 'uppercase',
+                textShadow: '0 0 30px rgba(241, 245, 249, 0.3)',
+                // SF19: Blinking/pulsing effect - 1.2s cycle (opacity 1.0 → 0.5 → 1.0)
+                animation: 'verifyPulse 1.2s ease-in-out infinite',
               }}
             >
               VERIFYING CHAIN INTEGRITY

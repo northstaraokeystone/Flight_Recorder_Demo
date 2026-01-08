@@ -38,8 +38,9 @@ interface InvestorNarratorProps {
 // Callout configurations
 // SF15 POLISH: MONEY_SHOT increased to 5500ms for "distracted CFO" readability
 // 300ms fade in + 4700ms hold + 500ms fade out = ~5.5 seconds total visibility
+// SF19: DIFFERENCE moved to bottom-center (same as anomaly alerts) per "PROOF MODE ACTIVE" centering directive
 const CALLOUTS: Record<NarratorCalloutType, NarratorCallout> = {
-  DIFFERENCE: { type: 'DIFFERENCE', duration: 4000, position: 'top-left' },
+  DIFFERENCE: { type: 'DIFFERENCE', duration: 4000, position: 'bottom-center' },
   BENCHMARK: { type: 'BENCHMARK', duration: 3000, position: 'top-center' },
   MONEY_SHOT: { type: 'MONEY_SHOT', duration: 5500, position: 'bottom-center' },
   CLOSE: { type: 'CLOSE', duration: 4000, position: 'center' },
